@@ -931,7 +931,7 @@ def mobile_phone(cx, cy, size):
 
 # ---- 記号: ISO 7010 の指示・安全状態・防火（優先度 A の後半。仕様書 SPEC_2026-10-12-12.md） ----
 # 保護具の図柄（M003・M004・M013・M014・M016・M017）は、同じ頭部（head_shape）に保護具を重ねる。
-# 保護具は HEAD_ANCHORS の位置に合わせて、原点を中心にした高さ 40 の頭部の座標で書く（head_gear）。
+# 保護具は HEAD_ANCHORS の位置に合わせて、原点を中心にした高さ 40 の頭部の座標で書く（HEAD_GEAR）。
 
 def _head_with(gear, gap=1.2):
     """頭部（原点の中心で高さ 40）に保護具 gear を重ね、周りを gap だけ抜いて境目を見せる。"""
@@ -954,12 +954,11 @@ def ear_muffs_gear():
 
 
 def goggles_gear():
-    """目の保護具（ゴーグル）: 目の高さで顔の幅より広い枠と、白く抜いた 2 つのレンズ、耳へ回るバンド。"""
+    """目の保護具（ゴーグル）: 目の高さで顔の幅より広い枠と、地の色で抜いた 2 つのレンズ、耳へ回るバンド。"""
     frame = rounded_rect(-12.4, -11.4, 12.4, 0.6, 4.0)
     lenses = union(*(rounded_rect(side * 6.0 - 4.6, -9.0, side * 6.0 + 4.6, -1.8, 2.4) for side in (-1, 1)))
-    bridge_notch = polygon([(-2.0, 0.8), (2.0, 0.8), (0.0, -2.6)])
     strap = rect(-15.6, -8.0, 15.6, -3.6)
-    return (frame | strap) - lenses - bridge_notch
+    return (frame | strap) - lenses
 
 
 def face_shield_gear():
@@ -1003,8 +1002,7 @@ def open_book_shape():
     cover = polygon([(-18.4, -1.0), (-18.4, 17.6), (-8.0, 16.4), (0.0, 19.4), (8.0, 16.4), (18.4, 17.6),
                      (18.4, -1.0), (16.0, -1.0), (16.0, 15.0), (8.0, 13.8), (1.0, 16.4), (-1.0, 16.4),
                      (-8.0, 13.8), (-16.0, 15.0), (-16.0, -1.0)])
-    lines = union(*(rect(x0, y + t, x0 + 9.4, y + t + 1.2) for x0, t in ((-13.4, 0.0), (3.6, 0.0))
-                    for y in (-0.6, 3.0, 6.6, 10.2)))
+    lines = union(*(rect(x0, y, x0 + 9.4, y + 1.2) for x0 in (-13.4, 3.6) for y in (-0.6, 3.0, 6.6, 10.2)))
     # 文字の行は、ページの傾きに合わせず水平に置く（細かい斜めの線はつぶれる）
     info = circle(0.0, -16.4, 2.4) | rounded_rect(-2.1, -12.2, 2.1, -5.8, 0.8)
     return (pages - lines) | cover | info
