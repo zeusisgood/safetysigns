@@ -30,3 +30,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# ForgeGradle のそのほかの生成物
+mcmodsrepo/
+eclipse/
+*.launch
+logs/
+*.log
