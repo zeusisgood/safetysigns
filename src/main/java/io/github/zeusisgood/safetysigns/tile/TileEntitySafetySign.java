@@ -63,12 +63,20 @@ public class TileEntitySafetySign extends TileEntity {
         return true;
     }
 
-    // 描画の範囲。複数マスの看板は代表のマスから右・上へ広がるので、向きによらず覆えるよう周り 1 マスまで広げる
-    // （既定の 1 マスのままだと、代表のマスが画面の外に出たときに図柄ごと描かれなくなる）
+    // 描画の範囲。複数マスの看板は代表のマスから右・上へ広がる（ポール付きは最上段の板だけに描く）ので、向きによらず覆えるよう周り 1 マス・上へ 3 マスまで広げる
+    // （既定の 1 マスのままだと、代表のマスが画面の外に出たときに板ごと描かれなくなる）
     @Override
     @SideOnly(Side.CLIENT)
     public AxisAlignedBB getRenderBoundingBox() {
-        return new AxisAlignedBB(pos.add(-1, 0, -1), pos.add(2, 2, 2));
+        return new AxisAlignedBB(pos.add(-1, 0, -1), pos.add(2, 3, 2));
+    }
+
+    // 板そのものを TileEntity の描画（SignRenderer）で描くので、既定の 64 ブロックより遠くまで描く（256 ブロック。チャンクの描画距離 16 相当）。
+    // これより遠い看板は、ポール付きの支柱と金具だけが見える
+    @Override
+    @SideOnly(Side.CLIENT)
+    public double getMaxRenderDistanceSquared() {
+        return 256.0 * 256.0;
     }
 
     // チャンクを送るときの同期

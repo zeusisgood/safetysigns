@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * 看板が使うマスの並び（幅 × 高さ）。壁に貼る看板を正面から見て、代表のマス（部品 0）を左下に置き、
- * そこから右・上へ広がる。部品の番号は {@code 行 × 幅 + 列}（列は左から、行は下から）。
+ * 看板が使うマスの並び（幅 × 高さ）。看板を正面から見て、代表のマス（部品 0）を左下に置き、
+ * そこから右・上へ広がる（ポール付きは幅 1 なので、置いた所から真上へ）。部品の番号は {@code 行 × 幅 + 列}（列は左から、行は下から）。
  * <p>
  * 向きは Minecraft の EnumFacing の horizontal index（0 南・1 西・2 北・3 東）で、看板の面が向いている方向。
  * 図: doc/diagrams/multiblock.md
@@ -16,6 +16,8 @@ public final class SignLayout {
 
     public static final SignLayout SINGLE = new SignLayout(1, 1);
     public static final SignLayout WALL_2X2 = new SignLayout(2, 2);
+    /** ポール付き看板（縦 3 マス）。部品 0（代表）と 1 が支柱、部品 2 が最上段の看板。 */
+    public static final SignLayout POLE = new SignLayout(1, 3);
 
     // 正面から見た「右」の向き（x, z）。添字は horizontal index。
     // 南を向く看板は北を向いて見るので右は東、西を向く看板は東を向いて見るので右は南、…

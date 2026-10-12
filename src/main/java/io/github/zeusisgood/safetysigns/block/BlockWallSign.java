@@ -11,8 +11,8 @@ import net.minecraft.world.IBlockAccess;
 
 /**
  * 壁掛け看板 1×1。壁に貼る薄い板（厚さ 1 ピクセル）で、向きは 4 方向。
- * 図柄 ID は TileEntity（{@link TileEntitySafetySign}）が持つ。ブロックモデルは無地の板だけで、
- * 図柄はクライアントの TileEntity の描画が前面に重ねる。設置・右クリック・壊すときの処理は {@link BlockSafetySign}。
+ * 図柄 ID は TileEntity（{@link TileEntitySafetySign}）が持つ。ブロックモデルは何も描かず（壊すときの粒だけ）、
+ * 板はクライアントの TileEntity の描画が図柄の形に切り抜いて描く。当たり判定は切り抜いた形ではなく板の外形の四角。設置・右クリック・壊すときの処理は {@link BlockSafetySign}。
  */
 public class BlockWallSign extends BlockSafetySign {
 
@@ -32,6 +32,18 @@ public class BlockWallSign extends BlockSafetySign {
     protected BlockWallSign(String name, SignLayout layout) {
         super(name, layout);
         setDefaultState(blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH));
+    }
+
+    @Override
+    public int getFaceRow() {
+        // 看板全体が面
+        return 0;
+    }
+
+    @Override
+    public double getFaceZ() {
+        // 壁に貼る板（モデルの z = 15/16〜1）の前面
+        return 1.0 - THICKNESS;
     }
 
     @Override

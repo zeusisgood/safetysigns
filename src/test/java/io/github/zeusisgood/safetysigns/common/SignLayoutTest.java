@@ -104,6 +104,48 @@ public class SignLayoutTest {
         assertEquals(0, SignLayout.SINGLE.mirrorPart(0));
     }
 
+    @Test
+    public void poleGoesStraightUpForEveryFacing() {
+        for (int facing = 0; facing < 4; facing++) {
+            assertEquals(Arrays.asList(
+                    new GridPos(10, 64, -5),   // 0: 最下段の支柱（代表）
+                    new GridPos(10, 65, -5),   // 1: 中段の支柱
+                    new GridPos(10, 66, -5)),  // 2: 最上段の看板
+                    SignLayout.POLE.cells(ORIGIN, facing));
+        }
+    }
+
+    @Test
+    public void poleOriginIsTheBottomFromEveryPart() {
+        for (int facing = 0; facing < 4; facing++) {
+            for (int part = 0; part < 3; part++) {
+                assertEquals(ORIGIN, SignLayout.POLE.originOf(ORIGIN.add(0, part, 0), facing, part));
+            }
+        }
+    }
+
+    @Test
+    public void poleNeedsAllThreeCells() {
+        GridPos middle = ORIGIN.add(0, 1, 0);
+        GridPos top = ORIGIN.add(0, 2, 0);
+        assertTrue(SignLayout.POLE.canPlace(ORIGIN, NORTH, cell -> true));
+        // 最上段がふさがっている（天井が低い・高さの上限など）と置けない
+        assertFalse(SignLayout.POLE.canPlace(ORIGIN, NORTH, cell -> !cell.equals(top)));
+        assertFalse(SignLayout.POLE.canPlace(ORIGIN, EAST, cell -> cell.y < 66));
+        // 中段・最下段がふさがっていても置けない
+        assertFalse(SignLayout.POLE.canPlace(ORIGIN, WEST, cell -> !cell.equals(middle)));
+        assertFalse(SignLayout.POLE.canPlace(ORIGIN, SOUTH, cell -> !cell.equals(ORIGIN)));
+        // 隣のマス（横）がふさがっていても関係ない
+        assertTrue(SignLayout.POLE.canPlace(ORIGIN, WEST, cell -> !cell.equals(ORIGIN.add(1, 0, 0))));
+    }
+
+    @Test
+    public void mirrorKeepsPoleParts() {
+        for (int part = 0; part < 3; part++) {
+            assertEquals(part, SignLayout.POLE.mirrorPart(part));
+        }
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void rejectsEmptySize() {
         new SignLayout(0, 2);

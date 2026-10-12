@@ -1,5 +1,6 @@
 tile.safetysigns.wall_sign_1x1.name=壁掛け看板 1×1
 tile.safetysigns.wall_sign_2x2.name=壁掛け看板 2×2
+tile.safetysigns.pole_sign.name=ポール付き看板
 gui.safetysigns.picker.title=図柄を選ぶ
 gui.safetysigns.search=検索…
 gui.safetysigns.reset_blank=無地に戻す

@@ -4,6 +4,7 @@ import io.github.zeusisgood.safetysigns.SafetySignsMod;
 import io.github.zeusisgood.safetysigns.common.SignCatalog;
 import io.github.zeusisgood.safetysigns.common.SignDefinition;
 import io.github.zeusisgood.safetysigns.common.SignDefinitionParser;
+import io.github.zeusisgood.safetysigns.common.SignOutline;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -17,19 +18,25 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 
 import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 /**
  * 図柄の一覧（定義ファイル）とテクスチャ（クライアントだけ）。
  * ブロックのテクスチャを貼り直すたび（起動・F3+T・リソースパックの変更）に、全パックの定義ファイルを読み直して、
- * 図柄のテクスチャをブロックのテクスチャに登録する。
+ * 図柄のテクスチャをブロックのテクスチャに登録し、テクスチャの透明でない所から切り抜いた板の形（{@link SignOutline}）を作る。
  */
 @Mod.EventBusSubscriber(modid = SafetySignsMod.MODID, value = Side.CLIENT)
 public final class SignTextures {
@@ -38,11 +45,19 @@ public final class SignTextures {
     public static final ResourceLocation BLANK = new ResourceLocation(SafetySignsMod.MODID, "blocks/sign_blank");
     /** 一覧にない図柄 ID の「?」。 */
     public static final ResourceLocation UNKNOWN = new ResourceLocation(SafetySignsMod.MODID, "blocks/sign_unknown");
+    /** 看板の裏面と縁（灰色の金属板）。 */
+    public static final ResourceLocation BACK = new ResourceLocation(SafetySignsMod.MODID, "blocks/sign_back");
+
+    /** テクスチャが読めなかったときの板の形（四角。テクスチャはバニラの「テクスチャなし」の四角になる）。 */
+    private static final SignOutline MISSING_OUTLINE = SignOutline.square(16);
 
     /** 各名前空間の定義ファイルの置き場所（assets/<namespace>/ からの相対）。 */
     private static final String DEFINITIONS_PATH = "safetysigns/signs.json";
 
     private static volatile SignCatalog catalog = SignCatalog.EMPTY;
+    private static volatile Map<ResourceLocation, SignOutline> outlines = Collections.emptyMap();
+    /** テクスチャを貼り直した回数。描画が取っておいた形（SignRenderer のディスプレイリスト）を作り直す合図。 */
+    private static volatile int generation;
 
     private SignTextures() {
     }
@@ -58,13 +73,23 @@ public final class SignTextures {
         if (!"textures".equals(map.getBasePath())) {
             return;
         }
-        SignCatalog loaded = load(Minecraft.getMinecraft().getResourceManager());
-        catalog = loaded;
-        map.registerSprite(BLANK);
-        map.registerSprite(UNKNOWN);
+        IResourceManager resourceManager = Minecraft.getMinecraft().getResourceManager();
+        SignCatalog loaded = load(resourceManager);
+        List<ResourceLocation> textures = new ArrayList<>();
+        textures.add(BLANK);
+        textures.add(UNKNOWN);
         for (SignDefinition definition : loaded.all()) {
-            map.registerSprite(new ResourceLocation(definition.getTexture()));
+            textures.add(new ResourceLocation(definition.getTexture()));
         }
+        Map<ResourceLocation, SignOutline> shapes = new HashMap<>();
+        for (ResourceLocation texture : textures) {
+            map.registerSprite(texture);
+            shapes.computeIfAbsent(texture, t -> readOutline(resourceManager, t));
+        }
+        map.registerSprite(BACK);
+        outlines = shapes;
+        catalog = loaded;
+        generation++;
         SafetySignsMod.LOGGER.info("Loaded {} sign definitions", loaded.all().size());
     }
 
@@ -97,6 +122,46 @@ public final class SignTextures {
             }
         }
         return SignCatalog.merge(packs);
+    }
+
+    /**
+     * テクスチャの PNG を読み、透明でない所から板の形を作る。アニメーションするテクスチャ（.mcmeta があり、縦に並んだコマ）は最初のコマだけ。
+     * 読めなければ四角（ログに警告）。
+     */
+    private static SignOutline readOutline(IResourceManager resourceManager, ResourceLocation texture) {
+        ResourceLocation file = new ResourceLocation(texture.getResourceDomain(), "textures/" + texture.getResourcePath() + ".png");
+        try (IResource resource = resourceManager.getResource(file); InputStream in = resource.getInputStream()) {
+            BufferedImage image = ImageIO.read(in);
+            if (image == null) {
+                throw new IOException("not an image");
+            }
+            int width = image.getWidth();
+            // コマは幅と同じ高さの正方形（バニラの既定）。.mcmeta のない縦長の静止画は全体を使う
+            boolean animated = image.getHeight() > width && image.getHeight() % width == 0 && hasMetadata(resourceManager, file);
+            int height = animated ? width : image.getHeight();
+            return SignOutline.fromArgb(width, height, image.getRGB(0, 0, width, height, null, 0, width));
+        } catch (IOException e) {
+            SafetySignsMod.LOGGER.warn("Failed to read the shape of {}", file, e);
+            return MISSING_OUTLINE;
+        }
+    }
+
+    private static boolean hasMetadata(IResourceManager resourceManager, ResourceLocation file) {
+        try (IResource resource = resourceManager.getResource(file)) {
+            return resource.hasMetadata();
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /** テクスチャを貼り直した回数（貼り直すと図柄のテクスチャの場所と板の形が変わる）。 */
+    public static int generation() {
+        return generation;
+    }
+
+    /** テクスチャ（{@link #textureOf} の結果）から切り抜いた板の形。 */
+    public static SignOutline outlineOf(ResourceLocation texture) {
+        return outlines.getOrDefault(texture, MISSING_OUTLINE);
     }
 
     /** 図柄 ID に対応するテクスチャ。null は無地、一覧にない ID は「?」。 */

@@ -422,16 +422,13 @@ public class GuiSignPicker extends GuiScreen {
         }
     }
 
-    /** 無地の板の上に図柄を重ねて描く（図柄の透明な所から板が見えるように、看板と同じ重ね方）。 */
+    /** 図柄を描く（看板と同じく、透明な所は板がない＝背景が見える。無地は無地の四角い板）。 */
     private void drawSign(ResourceLocation texture, int x, int y, int w, int h) {
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.enableBlend();
-        drawTexturedModalRect(x, y, SignTextures.sprite(SignTextures.BLANK), w, h);
-        if (!texture.equals(SignTextures.BLANK)) {
-            TextureAtlasSprite sprite = SignTextures.sprite(texture);
-            drawTexturedModalRect(x, y, sprite, w, h);
-        }
+        TextureAtlasSprite sprite = SignTextures.sprite(texture);
+        drawTexturedModalRect(x, y, sprite, w, h);
         GlStateManager.disableBlend();
     }
 

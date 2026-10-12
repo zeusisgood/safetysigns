@@ -1,8 +1,8 @@
 {
   "variants": {
-    "facing=north": { "model": "safetysigns:wall_sign_1x1" },
-    "facing=east": { "model": "safetysigns:wall_sign_1x1", "y": 90 },
-    "facing=south": { "model": "safetysigns:wall_sign_1x1", "y": 180 },
-    "facing=west": { "model": "safetysigns:wall_sign_1x1", "y": 270 }
+    "facing=north": { "model": "safetysigns:wall_sign" },
+    "facing=east": { "model": "safetysigns:wall_sign", "y": 90 },
+    "facing=south": { "model": "safetysigns:wall_sign", "y": 180 },
+    "facing=west": { "model": "safetysigns:wall_sign", "y": 270 }
   }
 }
