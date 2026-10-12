@@ -32,9 +32,9 @@ Put a radiation sign around your reactor, an electricity sign on your switchboar
 
 ### Recipes (shapeless)
 
-- Wall sign 1x1: 1 sign + 1 iron ingot
-- Wall sign 2x2: 4 signs + 1 iron ingot
-- Pole sign: 3 signs + 1 iron ingot
+- Wall sign 1x1: 1 wooden sign + 1 iron ingot
+- Wall sign 2x2: 4 wooden signs + 1 iron ingot
+- Pole sign: 3 wooden signs + 1 iron ingot
 - Iron accepts the ore dictionary `ingotIron` and `plateIron`
 - A single sign item in the grid resets it to blank
 
@@ -64,9 +64,9 @@ ISO 7010 の安全標識をモチーフにした、装飾用の警告看板を�
 
 ### レシピ（不定形）
 
-- 壁掛け看板 1×1: 看板 1 + 鉄インゴット 1
-- 壁掛け看板 2×2: 看板 4 + 鉄インゴット 1
-- ポール付き看板: 看板 3 + 鉄インゴット 1
+- 壁掛け看板 1×1: 看板（木）1 + 鉄インゴット 1
+- 壁掛け看板 2×2: 看板（木）4 + 鉄インゴット 1
+- ポール付き看板: 看板（木）3 + 鉄インゴット 1
 - 鉄は鉱石辞書の `ingotIron`・`plateIron` も使える
 - 看板アイテム 1 個だけをクラフト枠に入れると無地に戻る
 
