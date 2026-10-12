@@ -1,1 +1,12 @@
 tile.safetysigns.wall_sign_1x1.name=Safety Sign (Wall, 1x1)
+gui.safetysigns.picker.title=Choose a sign
+gui.safetysigns.search=Search...
+gui.safetysigns.reset_blank=Reset to blank
+gui.safetysigns.blank=Blank
+gui.safetysigns.unknown=Unknown sign (%s)
+gui.safetysigns.no_results=No signs found
+gui.safetysigns.category.w=Warning
+gui.safetysigns.category.p=Prohibition
+gui.safetysigns.category.m=Mandatory action
+gui.safetysigns.category.e=Safe condition
+gui.safetysigns.category.f=Fire equipment

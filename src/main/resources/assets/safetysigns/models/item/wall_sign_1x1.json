@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "safetysigns:signs/w003"
+    "layer0": "safetysigns:blocks/sign_blank"
   }
 }

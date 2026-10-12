@@ -1,6 +1,9 @@
 package io.github.zeusisgood.safetysigns.block;
 
 import io.github.zeusisgood.safetysigns.SafetySignsMod;
+import io.github.zeusisgood.safetysigns.item.ItemSafetySign;
+import io.github.zeusisgood.safetysigns.item.SignNbt;
+import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockHorizontal;
 import net.minecraft.block.SoundType;
@@ -12,7 +15,11 @@ import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -22,8 +29,8 @@ import net.minecraft.world.World;
 
 /**
  * 壁掛け看板 1×1。壁に貼る薄い板（厚さ 1 ピクセル）で、向きは 4 方向。
- * 0.1.0 の時点では図柄を w003 に固定している（見た目はブロックモデルのテクスチャだけ）。
- * 図柄 ID を NBT に持つのは仕様書 9 の 2 から。
+ * 図柄 ID は TileEntity（{@link TileEntitySafetySign}）が持つ。ブロックモデルは無地の板だけで、
+ * 図柄はクライアントの TileEntity の描画が前面に重ねる。
  */
 public class BlockWallSign extends Block {
 
@@ -58,6 +65,41 @@ public class BlockWallSign extends Block {
             int meta, EntityLivingBase placer) {
         // 置いた人の向きに合わせる（看板の面が置いた人のほうを向く）
         return getDefaultState().withProperty(FACING, placer.getHorizontalFacing().getOpposite());
+    }
+
+    @Override
+    public void onBlockPlacedBy(World world, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
+        // アイテムの図柄を引き継ぐ（形の正しい ID だけ）
+        String signId = SignNbt.getValidSignId(stack);
+        TileEntity tile = world.getTileEntity(pos);
+        if (signId != null && tile instanceof TileEntitySafetySign) {
+            ((TileEntitySafetySign) tile).setSignId(signId);
+        }
+    }
+
+    @Override
+    public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand,
+            EnumFacing facing, float hitX, float hitY, float hitZ) {
+        // 看板アイテムを持っているときは GUI を開かない（そのまま隣に設置する）。
+        // 両手で 2 回呼ばれるので、メインの手の 1 回だけで開く
+        if (hand != EnumHand.MAIN_HAND || player.getHeldItemMainhand().getItem() instanceof ItemSafetySign) {
+            return false;
+        }
+        if (world.isRemote) {
+            // GUI はクライアントだけ（コンテナを持たないので、サーバーは何もしない）
+            player.openGui(SafetySignsMod.instance, SafetySignsMod.GUI_SIGN_PICKER, world, pos.getX(), pos.getY(), pos.getZ());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean hasTileEntity(IBlockState state) {
+        return true;
+    }
+
+    @Override
+    public TileEntity createTileEntity(World world, IBlockState state) {
+        return new TileEntitySafetySign();
     }
 
     @Override

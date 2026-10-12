@@ -1,1 +1,12 @@
 tile.safetysigns.wall_sign_1x1.name=壁掛け看板 1×1
+gui.safetysigns.picker.title=図柄を選ぶ
+gui.safetysigns.search=検索…
+gui.safetysigns.reset_blank=無地に戻す
+gui.safetysigns.blank=無地
+gui.safetysigns.unknown=不明な図柄（%s）
+gui.safetysigns.no_results=見つかりません
+gui.safetysigns.category.w=警告
+gui.safetysigns.category.p=禁止
+gui.safetysigns.category.m=指示
+gui.safetysigns.category.e=安全状態
+gui.safetysigns.category.f=防火
