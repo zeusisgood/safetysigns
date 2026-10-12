@@ -1,6 +1,7 @@
 package io.github.zeusisgood.safetysigns.network;
 
 import io.github.zeusisgood.safetysigns.SafetySignsMod;
+import io.github.zeusisgood.safetysigns.common.SignAppearance;
 import io.github.zeusisgood.safetysigns.common.SignIds;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
 import io.netty.buffer.ByteBuf;
@@ -13,11 +14,9 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import javax.annotation.Nullable;
-
 /**
- * クライアント → サーバー: 看板の図柄を変える（GUI で選ぶたびに送る）。
- * 中身: 看板の位置（long）、図柄があるか（boolean）、図柄 ID（UTF-8、あるときだけ）。
+ * クライアント → サーバー: 看板の見た目（図柄・切り抜き・裏面）を変える（GUI で選ぶ・切り替えるたびに送る）。
+ * 中身: 看板の位置（long）、図柄があるか（boolean）、図柄 ID（UTF-8、あるときだけ）、切り抜き（boolean）、裏面が図柄か（boolean）。
  * 中身を変えたら互換性を破るのでマイナーを上げる。
  */
 public class MessageSetSign implements IMessage {
@@ -26,31 +25,35 @@ public class MessageSetSign implements IMessage {
     public static final double MAX_DISTANCE_SQ = 8.0 * 8.0;
 
     private BlockPos pos;
-    @Nullable
-    private String signId;
+    private SignAppearance appearance;
 
     public MessageSetSign() {
     }
 
-    /** @param signId null は無地に戻す */
-    public MessageSetSign(BlockPos pos, @Nullable String signId) {
+    public MessageSetSign(BlockPos pos, SignAppearance appearance) {
         this.pos = pos;
-        this.signId = signId;
+        this.appearance = appearance;
     }
 
     @Override
     public void fromBytes(ByteBuf buf) {
         pos = BlockPos.fromLong(buf.readLong());
-        signId = buf.readBoolean() ? ByteBufUtils.readUTF8String(buf) : null;
+        String signId = buf.readBoolean() ? ByteBufUtils.readUTF8String(buf) : null;
+        boolean cutout = buf.readBoolean();
+        boolean backPattern = buf.readBoolean();
+        appearance = new SignAppearance(signId, cutout, backPattern);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        String signId = appearance.getSignId();
         buf.writeLong(pos.toLong());
         buf.writeBoolean(signId != null);
         if (signId != null) {
             ByteBufUtils.writeUTF8String(buf, signId);
         }
+        buf.writeBoolean(appearance.isCutout());
+        buf.writeBoolean(appearance.isBackPattern());
     }
 
     public static class Handler implements IMessageHandler<MessageSetSign, IMessage> {
@@ -61,9 +64,10 @@ public class MessageSetSign implements IMessage {
             return null;
         }
 
-        // クライアントから届いた値を正にしない: ID の形・看板が届く距離にあるか・いじってよい場所かを確かめる
+        // クライアントから届いた値を正にしない: ID の形・看板が届く距離にあるか・いじってよい場所かを確かめる（切り抜き・裏面は真偽値なので形の確認は要らない）
         private static void apply(EntityPlayerMP player, MessageSetSign message) {
-            if (message.signId != null && !SignIds.isValid(message.signId)) {
+            String signId = message.appearance.getSignId();
+            if (signId != null && !SignIds.isValid(signId)) {
                 SafetySignsMod.LOGGER.warn("{} sent a malformed sign id; ignored", player.getName());
                 return;
             }
@@ -76,7 +80,7 @@ public class MessageSetSign implements IMessage {
             }
             TileEntity tile = world.getTileEntity(pos);
             if (tile instanceof TileEntitySafetySign) {
-                ((TileEntitySafetySign) tile).setSignId(message.signId);
+                ((TileEntitySafetySign) tile).setAppearance(message.appearance);
             }
         }
     }

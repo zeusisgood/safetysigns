@@ -2,6 +2,7 @@ package io.github.zeusisgood.safetysigns.block;
 
 import io.github.zeusisgood.safetysigns.SafetySignsMod;
 import io.github.zeusisgood.safetysigns.common.GridPos;
+import io.github.zeusisgood.safetysigns.common.SignAppearance;
 import io.github.zeusisgood.safetysigns.common.SignLayout;
 import io.github.zeusisgood.safetysigns.item.ItemSafetySign;
 import io.github.zeusisgood.safetysigns.item.SignNbt;
@@ -151,11 +152,10 @@ public abstract class BlockSafetySign extends Block {
 
     @Override
     public void onBlockPlacedBy(World world, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
-        // アイテムの図柄を引き継ぐ（形の正しい ID だけ）。pos は代表のマス
-        String signId = SignNbt.getValidSignId(stack);
+        // アイテムの見た目（図柄・切り抜き・裏面）を引き継ぐ（図柄 ID は形の正しいものだけ）。pos は代表のマス
         TileEntity tile = world.getTileEntity(pos);
-        if (signId != null && tile instanceof TileEntitySafetySign) {
-            ((TileEntitySafetySign) tile).setSignId(signId);
+        if (tile instanceof TileEntitySafetySign) {
+            ((TileEntitySafetySign) tile).setAppearance(SignNbt.getValid(stack));
         }
     }
 
@@ -236,10 +236,10 @@ public abstract class BlockSafetySign extends Block {
         return EnumPushReaction.BLOCK;
     }
 
-    /** この看板の図柄を持ったアイテム（一覧にない ID もそのまま持つ）。代表のマスが欠けていれば無地。 */
+    /** この看板の見た目（図柄・切り抜き・裏面）を持ったアイテム（一覧にない ID もそのまま持つ）。代表のマスが欠けていれば既定。 */
     private ItemStack createSignStack(IBlockAccess world, BlockPos pos) {
         TileEntitySafetySign tile = getSignTile(world, pos);
-        return ItemSafetySign.createStack(Item.getItemFromBlock(this), tile != null ? tile.getSignId() : null);
+        return ItemSafetySign.createStack(Item.getItemFromBlock(this), tile != null ? tile.getAppearance() : SignAppearance.DEFAULT);
     }
 
     // ---- TileEntity は代表のマスだけ ----
