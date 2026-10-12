@@ -1,0 +1,68 @@
+{
+  "signs": [
+    {
+      "id": "safetysigns:w001",
+      "category": "W",
+      "code": "W001",
+      "texture": "safetysigns:signs/w001",
+      "names": { "en_us": "General warning sign", "ja_jp": "一般警告" },
+      "keywords": ["warning", "caution", "danger", "警告", "注意", "危険"]
+    },
+    {
+      "id": "safetysigns:w002",
+      "category": "W",
+      "code": "W002",
+      "texture": "safetysigns:signs/w002",
+      "names": { "en_us": "Warning; Explosive material", "ja_jp": "爆発物" },
+      "keywords": ["explosive", "explosion", "tnt", "爆発", "爆薬"]
+    },
+    {
+      "id": "safetysigns:w003",
+      "category": "W",
+      "code": "W003",
+      "texture": "safetysigns:signs/w003",
+      "names": { "en_us": "Warning; Radioactive material or ionizing radiation", "ja_jp": "放射性物質・電離放射線" },
+      "keywords": ["radiation", "radioactive", "nuclear", "reactor", "放射線", "放射能", "原子炉"]
+    },
+    {
+      "id": "safetysigns:w012",
+      "category": "W",
+      "code": "W012",
+      "texture": "safetysigns:signs/w012",
+      "names": { "en_us": "Warning; Electricity", "ja_jp": "感電注意" },
+      "keywords": ["electricity", "electric", "shock", "voltage", "感電", "電気", "高電圧"]
+    },
+    {
+      "id": "safetysigns:w017",
+      "category": "W",
+      "code": "W017",
+      "texture": "safetysigns:signs/w017",
+      "names": { "en_us": "Warning; Hot surface", "ja_jp": "高温注意" },
+      "keywords": ["hot", "heat", "temperature", "高温", "熱", "やけど"]
+    },
+    {
+      "id": "safetysigns:m010",
+      "category": "M",
+      "code": "M010",
+      "texture": "safetysigns:signs/m010",
+      "names": { "en_us": "Wear protective clothing", "ja_jp": "防護服着用" },
+      "keywords": ["protective clothing", "hazmat", "suit", "防護服", "保護衣"]
+    },
+    {
+      "id": "safetysigns:p004",
+      "category": "P",
+      "code": "P004",
+      "texture": "safetysigns:signs/p004",
+      "names": { "en_us": "No thoroughfare", "ja_jp": "通行禁止" },
+      "keywords": ["no entry", "no passage", "keep out", "通行", "立入禁止", "進入禁止"]
+    },
+    {
+      "id": "safetysigns:p010",
+      "category": "P",
+      "code": "P010",
+      "texture": "safetysigns:signs/p010",
+      "names": { "en_us": "Do not touch", "ja_jp": "触るな" },
+      "keywords": ["do not touch", "hands off", "触れるな", "接触禁止"]
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "parent": "block/block",
   "textures": {
     "particle": "safetysigns:blocks/sign_back",
-    "front": "safetysigns:signs/w003",
+    "front": "safetysigns:blocks/sign_blank",
     "back": "safetysigns:blocks/sign_back"
   },
   "elements": [
