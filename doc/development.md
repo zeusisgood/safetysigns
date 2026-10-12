@@ -78,7 +78,7 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 | GHS の記号 | `exploding_bomb` `flame_on_bar` `flame_over_circle` `gas_cylinder` `corrosion` `skull_crossbones` `health_hazard` `environment` | GHS01〜GHS09（GHS07 は `exclamation`）。どれも原点の中心で高さ 40（`GHS_HEIGHT`）で書いている |
 | 放射線の波 | `radiation_waves(cx, cy, angles)` | 中心から外へ向かう波線（ISO 21482） |
 
-部品を足すときは、原点を中心にした決まった高さで形を書き、`place` で置く（`hand_shape` と `hand` の組を見る）。輪郭線だけで描く部品（GHS05 の試験管・手）は `raster.outline(形, 太さ)` で線にする。形は `raster.py` の基本の図形（円・楕円・四角・角の丸い四角・太線 `capsule`・太さの変わる線 `tapered`・折れ線 `polyline`・多角形・輪・波）を `|`（足す）・`-`（抜く）・`&`（重なり）で組む。
+部品を足すときは、原点を中心にした決まった高さで形を書き、`place` で置く（`hand_shape` と `hand` の組を見る）。輪郭線だけで描く部品（GHS05 の試験管・手）は `raster.outline(形, 太さ)` で線にする（形を `raster.erode` で細らせて抜いたもの。太さは小さい値の前提）。形は `raster.py` の基本の図形（円・楕円・四角・角の丸い四角・太線 `capsule`・太さの変わる線 `tapered`・折れ線 `polyline`・多角形・輪・波）を `|`（足す）・`-`（抜く）・`&`（重なり）で組む。
 重なった部品の境目を見せたいときは `raster.layered(奥, 手前, gap=1.0)`（手前の周りを gap だけ抜く）。
 
 ### 図柄を足す

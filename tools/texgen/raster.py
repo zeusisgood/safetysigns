@@ -212,7 +212,7 @@ def layered(*shapes, gap=1.0):
 
 
 def erode(shape, r, directions=16):
-    """shape を r だけ細らせた形（dilate の裏返し）。"""
+    """shape を r だけ細らせた形（dilate の裏返し）。dilate と同じく r が小さい（数単位）前提の近似。"""
     outside = dilate(Shape(lambda x, y: not shape.inside(x, y)), r, directions)
     return Shape(lambda x, y: not outside.inside(x, y))
 
