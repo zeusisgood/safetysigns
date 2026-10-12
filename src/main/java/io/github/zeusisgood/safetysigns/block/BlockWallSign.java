@@ -35,6 +35,18 @@ public class BlockWallSign extends BlockSafetySign {
     }
 
     @Override
+    public int getFaceRow() {
+        // 看板全体が面
+        return 0;
+    }
+
+    @Override
+    public double getFaceZ() {
+        // 壁に貼る板（モデルの z = 15/16〜1）の前面
+        return 1.0 - THICKNESS;
+    }
+
+    @Override
     public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos) {
         // 複数マスの看板も、マスごとに同じ薄い板
         return BOUNDS[state.getValue(FACING).getHorizontalIndex()];

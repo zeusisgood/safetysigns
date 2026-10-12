@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * サーバーとクライアントの両方に必要。同じマイナー同士（0.3.x）なら、パッチが違っても接続できる。
+ * サーバーとクライアントの両方に必要。同じマイナー同士（0.4.x）なら、パッチが違っても接続できる。
  * 互換性を破ったらマイナーを上げ、ACCEPTED_VERSIONS も新しいマイナーに書き換える（CLAUDE.md のバージョンの方針）。
  */
 @Mod(modid = SafetySignsMod.MODID, name = SafetySignsMod.NAME, version = SafetySignsMod.VERSION,
@@ -18,9 +18,9 @@ public class SafetySignsMod {
     public static final String MODID = "safetysigns";
     public static final String NAME = "Safety Signs";
     /** build.gradle の version と必ず揃える。 */
-    public static final String VERSION = "0.3.0";
+    public static final String VERSION = "0.4.0";
     /** 接続できる相手のバージョンの範囲（Maven の書式）。 */
-    public static final String ACCEPTED_VERSIONS = "[0.3,0.4)";
+    public static final String ACCEPTED_VERSIONS = "[0.4,0.5)";
 
     /** GUI の番号: 図柄選択。 */
     public static final int GUI_SIGN_PICKER = 0;

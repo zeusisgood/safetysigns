@@ -1,5 +1,6 @@
 tile.safetysigns.wall_sign_1x1.name=Safety Sign (Wall, 1x1)
 tile.safetysigns.wall_sign_2x2.name=Safety Sign (Wall, 2x2)
+tile.safetysigns.pole_sign.name=Safety Sign (Pole)
 gui.safetysigns.picker.title=Choose a sign
 gui.safetysigns.search=Search...
 gui.safetysigns.reset_blank=Reset to blank

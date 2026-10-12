@@ -5,7 +5,7 @@
 3×5 ドットの数字で描くだけ。本番の図柄（放射線マーク・稲妻・炎など）は 9 の 7 でこのスクリプトを書き直す。
 
 使い方: python3 tools/texgen/generate.py
-出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/preview.png
+出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png（sign_back.png はこのスクリプトでは作らない）と doc/textures/preview.png
 """
 from pathlib import Path
 
@@ -28,6 +28,10 @@ CLEAR = (0, 0, 0, 0)
 # 無地の金属板（裏面の sign_back と同じ系統の色）
 PLATE = (0xE4, 0xE6, 0xE8, 255)
 PLATE_EDGE = (0xA7, 0xAD, 0xB2, 255)
+# ポールの支柱（亜鉛メッキ風。仕様書 2.2）。基調の色と、丸く見せる明るい列・暗い列
+POLE = (0xA7, 0xAD, 0xB2, 255)
+POLE_LIGHT = (0xC4, 0xC9, 0xCD, 255)
+POLE_DARK = (0x86, 0x8D, 0x93, 255)
 
 # 3×5 ドットの数字と「?」
 GLYPHS = {
@@ -107,6 +111,16 @@ def blank():
     return image
 
 
+def pole():
+    """ポールの支柱（16×16。モデルは左端の 4 列を 4 ピクセル角の支柱の各面に貼る）。仮のテクスチャ。"""
+    image = Image.new("RGBA", (16, 16), POLE)
+    for x in range(16):
+        color = {0: POLE_LIGHT, 3: POLE_DARK}.get(x % 4, POLE)
+        for y in range(16):
+            image.putpixel((x, y), color)
+    return image
+
+
 def unknown():
     """一覧にない図柄 ID の「?」。"""
     image = Image.new("RGBA", (SIZE, SIZE), CLEAR)
@@ -126,6 +140,8 @@ def main():
     for name, image in [("blank", blank()), ("unknown", unknown())]:
         image.save(TEXTURES / "blocks" / f"sign_{name}.png")
         outputs.append((name, image))
+    # 支柱は図柄ではないので、一覧画像には入れない
+    pole().save(TEXTURES / "blocks" / "sign_pole.png")
 
     # 一覧画像: 8 倍に拡大して、無地の板に重ねて並べる
     scale = 8

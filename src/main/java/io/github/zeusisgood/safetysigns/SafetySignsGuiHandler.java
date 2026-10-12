@@ -2,7 +2,6 @@ package io.github.zeusisgood.safetysigns;
 
 import io.github.zeusisgood.safetysigns.block.BlockSafetySign;
 import io.github.zeusisgood.safetysigns.client.gui.GuiSignPicker;
-import io.github.zeusisgood.safetysigns.common.SignLayout;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -27,8 +26,10 @@ public class SafetySignsGuiHandler implements IGuiHandler {
             IBlockState state = world.getBlockState(pos);
             TileEntity tile = world.getTileEntity(pos);
             if (state.getBlock() instanceof BlockSafetySign && tile instanceof TileEntitySafetySign) {
-                SignLayout layout = ((BlockSafetySign) state.getBlock()).getLayout();
-                return new GuiSignPicker(pos, ((TileEntitySafetySign) tile).getSignId(), layout.getWidth(), layout.getHeight());
+                // プレビューは図柄を描く面の縦横比（ポール付きは支柱を除いた上段の 1×1）
+                BlockSafetySign block = (BlockSafetySign) state.getBlock();
+                return new GuiSignPicker(pos, ((TileEntitySafetySign) tile).getSignId(), block.getLayout().getWidth(),
+                        block.getFaceHeight());
             }
         }
         return null;

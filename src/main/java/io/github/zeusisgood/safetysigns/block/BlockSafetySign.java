@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 看板のブロックの共通部分（1×1・2×2・ポール付きで使い回す）。
+ * 看板のブロックの共通部分（壁掛け 1×1・2×2、ポール付きで使い回す）。
  * <p>
  * 看板は {@link SignLayout} の並びで 1 マス以上を使う。図柄 ID は代表のマス（部品 0）の TileEntity だけが持ち、
  * どのマスを右クリック・ピックブロックしても代表のマスの図柄を使う。1 マスでも壊れたら全体を消し、
@@ -75,6 +75,19 @@ public abstract class BlockSafetySign extends Block {
     /** 部品の番号を変えた状態。1 マスの看板はそのまま。 */
     public IBlockState withPart(IBlockState state, int part) {
         return state;
+    }
+
+    // ---- 図柄を描く面（クライアントの描画と GUI のプレビューが使う） ----
+
+    /** 図柄を描く面の下端の行（代表のマスから何マス上か）。面は幅いっぱいで、ここから看板の上端まで。 */
+    public abstract int getFaceRow();
+
+    /** 図柄を描く面（板の前面）の位置。北を向いた看板のモデルでの z（ブロック単位。前面は -z を向く）。 */
+    public abstract double getFaceZ();
+
+    /** 図柄を描く面の高さ（マス）。 */
+    public int getFaceHeight() {
+        return layout.getHeight() - getFaceRow();
     }
 
     // ---- マスの計算（common/SignLayout に任せる） ----
