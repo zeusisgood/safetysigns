@@ -18,7 +18,7 @@ public class SafetySignsMod {
     public static final String MODID = "safetysigns";
     public static final String NAME = "Safety Signs";
     /** build.gradle の version と必ず揃える。 */
-    public static final String VERSION = "0.2.0";
+    public static final String VERSION = "0.2.1";
     /** 接続できる相手のバージョンの範囲（Maven の書式）。 */
     public static final String ACCEPTED_VERSIONS = "[0.2,0.3)";
 

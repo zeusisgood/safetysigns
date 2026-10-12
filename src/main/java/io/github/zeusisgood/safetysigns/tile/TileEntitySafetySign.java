@@ -52,6 +52,13 @@ public class TileEntitySafetySign extends TileEntity {
         return compound;
     }
 
+    // クリエイティブの Ctrl + ピックブロックなどで付く BlockEntityTag を、OP 以外が置いたときは読ませない
+    // （図柄 ID の形を確かめずに TileEntity へ入ってしまうため。図柄はアイテムの SignId から形を確かめて引き継ぐ）
+    @Override
+    public boolean onlyOpsCanSetNbt() {
+        return true;
+    }
+
     // チャンクを送るときの同期
     @Override
     public NBTTagCompound getUpdateTag() {

@@ -1,6 +1,6 @@
 # 仕組み（アーキテクチャ）
 
-現在の実装（0.2.0、仕様書「9. 作業の順番」の 2 まで）の全体構成と主要な流れ。
+現在の実装（0.2.1、仕様書「9. 作業の順番」の 3 まで）の全体構成と主要な流れ。
 仕組みを変えたら、同じ PR でこの文書と図を直す。条件付きの図は [`diagrams/`](diagrams/) にある。
 
 ## 全体構成
@@ -15,9 +15,10 @@
 | `SafetySignsMod` | `@Mod` 本体。mod ID・版・接続できる版の範囲。通信路と GUI の登録 | 両方 |
 | `SafetySignsGuiHandler` | GUI の番号 → 画面（図柄選択）。コンテナがないのでサーバーは何も開かない | 両方（画面はクライアント） |
 | `block/SafetySignsBlocks` | ブロック・アイテム・TileEntity（`safetysigns:sign`）の登録 | 両方 |
-| `block/BlockWallSign` | 壁掛け看板 1×1。向き・当たり判定。設置時にアイテムの図柄を引き継ぐ。右クリックで GUI | 両方 |
+| `block/BlockWallSign` | 壁掛け看板 1×1。向き・当たり判定。設置時にアイテムの図柄を引き継ぐ。右クリックで GUI。壊したとき・ピックブロックで図柄入りのアイテムを返す | 両方 |
 | `tile/TileEntitySafetySign` | 図柄 ID を持つ。保存とクライアントへの同期 | 両方 |
-| `item/ItemSafetySign`・`item/SignNbt` | 看板アイテム（ツールチップに図柄）。NBT のキー `SignId` の読み書き | 両方 |
+| `item/ItemSafetySign`・`item/SignNbt` | 看板アイテム（ツールチップに図柄）。スニーク右クリックで看板の図柄を写す。NBT のキー `SignId` の読み書き | 両方 |
+| `recipe/RecipeClearSign`・`recipe/SafetySignsRecipes` | 看板アイテム 1 個だけで無地に戻すレシピ（`safetysigns:clear_sign`）とその登録 | 両方 |
 | `network/MessageSetSign` | クライアント → サーバー: 図柄を変える。サーバーが形・距離・場所を確かめる | 両方 |
 | `common/` | Minecraft に依存しない計算: 図柄 ID の形（`SignIds`）、定義ファイルの読み取り（`SignDefinitionParser`）、マージと検索（`SignCatalog`） | 両方（使うのは主にクライアント） |
 | `client/SignTextures` | 定義ファイルを全パックから読んでマージし、図柄のテクスチャを登録する | クライアントだけ |
@@ -35,6 +36,7 @@ flowchart LR
         TE["TileEntitySafetySign<br/>NBT: SignId"]
         Msg["MessageSetSign"]
         Common["common/<br/>SignIds・SignCatalog"]
+        Recipe["recipe/<br/>無地に戻すレシピと登録"]
     end
     subgraph Client["クライアントだけ"]
         Tex["SignTextures<br/>定義の読み込み"]
@@ -47,6 +49,8 @@ flowchart LR
     Reg --> Item
     Reg --> TE
     Block -- 設置・右クリック --> TE
+    TE -- 写す・ドロップ・ピックブロック --> Item
+    Recipe -- NBT を外す --> Item
     Block -- openGui --> Gui
     Json --> Tex
     Tex -- マージ・検索 --> Common
@@ -84,12 +88,17 @@ sequenceDiagram
     C->>P: 前面に図柄（一覧にない ID は「?」）
 ```
 
-## 設置と表示
+## 設置・コピー・壊す
+
+右クリックの分岐（GUI・コピー・設置）は [`diagrams/right-click.md`](diagrams/right-click.md) に図がある。
 
 - 看板アイテムで右クリックすると、`ItemBlock` が設置し、`BlockWallSign.onBlockPlacedBy` がアイテムの `SignId`（形の正しいものだけ）を TileEntity に写す。向きは置いた人の向きの反対。
 - 看板アイテムを持って看板を右クリックしたときは GUI を開かず、そのまま隣に設置する。
+- 看板アイテムを持ってスニークし、看板を右クリックすると、`ItemSafetySign.onItemUse` が看板の図柄を手のアイテムに写す（設置しない。種類・サイズは違ってよい。スタックはまとめて写す）。スニーク中はバニラが `onBlockActivated` を呼ばないので、ブロックではなくアイテムの側で扱う（[ADR 0003](adr/0003-handle-copy-and-drops-on-the-item-side.md)）。書き換えはサーバーだけで、手のアイテムはバニラの同期で届く。
+- ピックブロックは `BlockWallSign.getPickBlock` が図柄入りのアイテムを返す（クライアントの TileEntity の図柄を使う）。クリエイティブの Ctrl + ピックブロックで付く `BlockEntityTag` は、OP 以外が置いたときは読ませない（`onlyOpsCanSetNbt`。形を確かめない ID が TileEntity に入るのを防ぐ）。
+- 壊すと、図柄を保持したアイテムが 1 個落ちる（一覧にない ID もそのまま）。プレイヤーが壊すときは `removedByPlayer` でブロックを消さずに残し、`getDrops` で TileEntity の図柄を読んでから `harvestBlock` で消す。クリエイティブではバニラどおり落とさない。爆発では、バニラが消す前にドロップを作るのでそのまま読める。
+- 看板アイテム 1 個だけをクラフト枠に入れると、`RecipeClearSign` が同じアイテムの無地（NBT なし）を返す。もともと NBT のないアイテムでは何も出さない。レシピ本には出さない。
 - 図柄は誰でも変えられる（仕様書 4。ロック機能は後回し）。アドベンチャーモードでも変えられる。弾くのは観戦者と、スポーン保護の内側だけ。
-- 壊したときのアイテムは、まだ無地（図柄の保持は仕様書 9 の 3）。
 
 ## NBT
 
