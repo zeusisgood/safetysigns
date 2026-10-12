@@ -42,6 +42,22 @@ public final class SignNbt {
         return readSignId(stack.getTagCompound());
     }
 
+    /** アイテムの図柄を変える。null は無地。タグが空になったら外す（無地のアイテムとスタックできるように）。 */
+    public static void setSignId(ItemStack stack, @Nullable String signId) {
+        NBTTagCompound compound = stack.getTagCompound();
+        if (compound == null) {
+            if (signId == null || signId.isEmpty()) {
+                return;
+            }
+            compound = new NBTTagCompound();
+            stack.setTagCompound(compound);
+        }
+        writeSignId(compound, signId);
+        if (compound.hasNoTags()) {
+            stack.setTagCompound(null);
+        }
+    }
+
     /**
      * 設置するときに引き継ぐ図柄 ID。クリエイティブではクライアントがアイテムの NBT を自由に作れるので、
      * 形の正しい ID だけを引き継ぐ（形が違えば無地にする）。

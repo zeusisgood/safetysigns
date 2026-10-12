@@ -16,16 +16,21 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.Mirror;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+
+import javax.annotation.Nullable;
 
 /**
  * 壁掛け看板 1×1。壁に貼る薄い板（厚さ 1 ピクセル）で、向きは 4 方向。
@@ -80,7 +85,9 @@ public class BlockWallSign extends Block {
     @Override
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand,
             EnumFacing facing, float hitX, float hitY, float hitZ) {
-        // 看板アイテムを持っているときは GUI を開かない（そのまま隣に設置する）。
+        // 右クリックの分岐は doc/diagrams/right-click.md。
+        // 看板アイテムを持っているときは GUI を開かない（そのまま隣に設置する）。スニーク中はバニラがここを呼ばず、
+        // 看板アイテムなら ItemSafetySign.onItemUse が図柄を写す。
         // 両手で 2 回呼ばれるので、メインの手の 1 回だけで開く
         if (hand != EnumHand.MAIN_HAND || player.getHeldItemMainhand().getItem() instanceof ItemSafetySign) {
             return false;
@@ -90,6 +97,40 @@ public class BlockWallSign extends Block {
             player.openGui(SafetySignsMod.instance, SafetySignsMod.GUI_SIGN_PICKER, world, pos.getX(), pos.getY(), pos.getZ());
         }
         return true;
+    }
+
+    @Override
+    public ItemStack getPickBlock(IBlockState state, RayTraceResult target, World world, BlockPos pos, EntityPlayer player) {
+        return createSignStack(world, pos);
+    }
+
+    @Override
+    public void getDrops(NonNullList<ItemStack> drops, IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
+        // 図柄を保持したアイテム。プレイヤーが壊したときは harvestBlock まで TileEntity を残してあるので読める
+        drops.add(createSignStack(world, pos));
+    }
+
+    @Override
+    public boolean removedByPlayer(IBlockState state, World world, BlockPos pos, EntityPlayer player, boolean willHarvest) {
+        // アイテムを落とすとき（クリエイティブ以外）は、ここではまだ消さない（getDrops で図柄を読むため）。harvestBlock で消す
+        if (willHarvest) {
+            return true;
+        }
+        return super.removedByPlayer(state, world, pos, player, willHarvest);
+    }
+
+    @Override
+    public void harvestBlock(World world, EntityPlayer player, BlockPos pos, IBlockState state, @Nullable TileEntity te,
+            ItemStack tool) {
+        super.harvestBlock(world, player, pos, state, te, tool);
+        world.setBlockToAir(pos);
+    }
+
+    /** この看板の図柄を持ったアイテム（一覧にない ID もそのまま持つ）。 */
+    private ItemStack createSignStack(IBlockAccess world, BlockPos pos) {
+        TileEntity tile = world.getTileEntity(pos);
+        String signId = tile instanceof TileEntitySafetySign ? ((TileEntitySafetySign) tile).getSignId() : null;
+        return ItemSafetySign.createStack(Item.getItemFromBlock(this), signId);
     }
 
     @Override
