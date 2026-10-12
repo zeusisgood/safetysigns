@@ -55,13 +55,31 @@ public class SignDefinitionParserTest {
         SignDefinitionParser.Result result = parse("pack", "{\"signs\":["
                 + "{\"id\":\"bad id\",\"category\":\"W\"},"
                 + "{\"id\":\"other:w001\",\"category\":\"W\"},"
-                + "{\"id\":\"pack:w001\",\"category\":\"X\"},"
+                + "{\"id\":\"pack:w003\"},"
                 + "{\"id\":[1],\"category\":\"W\"},"
                 + "\"text\","
                 + "{\"id\":\"pack:w002\",\"category\":\"W\"}]}");
         assertEquals(1, result.getDefinitions().size());
         assertEquals("pack:w002", result.getDefinitions().get(0).getId());
         assertEquals(5, result.getWarnings().size());
+    }
+
+    @Test
+    public void readsCategoriesOutsideIso7010() {
+        SignDefinitionParser.Result result = parse("pack", "{\"signs\":["
+                + "{\"id\":\"pack:ghs01\",\"category\":\"ghs\"},"
+                + "{\"id\":\"pack:iso21482\",\"category\":\"OTHER\"}]}");
+        assertEquals(SignCategory.GHS, result.getDefinitions().get(0).getCategory());
+        assertEquals(SignCategory.OTHER, result.getDefinitions().get(1).getCategory());
+        assertTrue(result.getWarnings().isEmpty());
+    }
+
+    @Test
+    public void unknownCategoryFallsBackToOther() {
+        SignDefinitionParser.Result result = parse("pack", "{\"signs\":[{\"id\":\"pack:un1\",\"category\":\"TRANSPORT\"}]}");
+        assertEquals(1, result.getDefinitions().size());
+        assertEquals(SignCategory.OTHER, result.getDefinitions().get(0).getCategory());
+        assertEquals(1, result.getWarnings().size());
     }
 
     @Test

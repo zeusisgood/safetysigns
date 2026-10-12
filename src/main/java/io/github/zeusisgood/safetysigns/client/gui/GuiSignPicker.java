@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * 図柄選択の GUI。上にカテゴリのタブ、左に図柄のグリッド、右にプレビューとその下に夜間に光るかの切り替え、下に検索欄と「無地に戻す」、その下に切り抜き・裏面の切り替え。
+ * 図柄選択の GUI。上にカテゴリのタブ（W P M E F GHS その他）、左に図柄のグリッド、右にプレビューとその下に夜間に光るかの切り替え、下に検索欄と「無地に戻す」、その下に切り抜き・裏面の切り替え。
  * 図柄をクリック・設定を切り替えるたびにサーバーへ送る（決定ボタンなし）。コンテナを持たないので、クライアントだけで開く。
  */
 public class GuiSignPicker extends GuiScreen {
@@ -49,7 +49,9 @@ public class GuiSignPicker extends GuiScreen {
     private static final int WIDTH = 256;
     private static final int HEIGHT = 224;
     private static final int TAB_Y = 18;
+    /** タブの幅の最小（1 文字の W P M E F の幅）。文字の長いタブ（GHS・その他）は文字に合わせて広げる。 */
     private static final int TAB_W = 24;
+    private static final int TAB_GAP = 2;
     private static final int TAB_H = 16;
     private static final int GRID_X = 8;
     private static final int GRID_Y = 40;
@@ -325,15 +327,32 @@ public class GuiSignPicker extends GuiScreen {
     private SignCategory tabAt(int mouseX, int mouseY) {
         for (SignCategory category : SignCategory.values()) {
             int x = left + tabX(category);
-            if (mouseX >= x && mouseX < x + TAB_W && mouseY >= top + TAB_Y && mouseY < top + TAB_Y + TAB_H) {
+            if (mouseX >= x && mouseX < x + tabWidth(category) && mouseY >= top + TAB_Y && mouseY < top + TAB_Y + TAB_H) {
                 return category;
             }
         }
         return null;
     }
 
-    private static int tabX(SignCategory category) {
-        return GRID_X + category.ordinal() * (TAB_W + 2);
+    /** タブの文字。ISO 7010 の分類と GHS は分類の名前そのまま、その他は言語ファイルの文字。 */
+    private static String tabLabel(SignCategory category) {
+        return category == SignCategory.OTHER ? I18n.format("gui.safetysigns.tab.other") : category.name();
+    }
+
+    private int tabWidth(SignCategory category) {
+        return Math.max(TAB_W, fontRenderer.getStringWidth(tabLabel(category)) + 10);
+    }
+
+    /** タブの左端（パネルの左から）。前のタブの幅を足していく。 */
+    private int tabX(SignCategory category) {
+        int x = GRID_X;
+        for (SignCategory before : SignCategory.values()) {
+            if (before == category) {
+                break;
+            }
+            x += tabWidth(before) + TAB_GAP;
+        }
+        return x;
     }
 
     @Nullable
@@ -384,11 +403,12 @@ public class GuiSignPicker extends GuiScreen {
         for (SignCategory category : SignCategory.values()) {
             int x = left + tabX(category);
             int y = top + TAB_Y;
+            int w = tabWidth(category);
             boolean empty = catalog().byCategory(category).isEmpty();
             int background;
             int textColor;
             if (category == tab) {
-                // 選択中だけ安全色。黄色の W は黒い文字。P と F は同じ赤なので、F は文字を黄にして区別する
+                // 選択中だけ分類の色。黄色の W は黒い文字。P と F は同じ赤なので、F は文字を黄にして区別する（GHS は明るい赤、その他は黒に白の文字）
                 background = 0xFF000000 | category.getColor();
                 textColor = category == SignCategory.W ? 0x1A1A1A : category == SignCategory.F ? 0xF9A800 : 0xFFFFFF;
             } else if (empty) {
@@ -399,9 +419,9 @@ public class GuiSignPicker extends GuiScreen {
                 background = TAB_IDLE;
                 textColor = 0xFFFFFF;
             }
-            drawRect(x, y, x + TAB_W, y + TAB_H, background);
-            String letter = category.name();
-            fontRenderer.drawString(letter, x + (TAB_W - fontRenderer.getStringWidth(letter)) / 2, y + 4, textColor);
+            drawRect(x, y, x + w, y + TAB_H, background);
+            String label = tabLabel(category);
+            fontRenderer.drawString(label, x + (w - fontRenderer.getStringWidth(label)) / 2, y + 4, textColor);
         }
     }
 

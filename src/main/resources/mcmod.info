@@ -2,7 +2,7 @@
 {
   "modid": "safetysigns",
   "name": "Safety Signs",
-  "description": "Decorative warning signs inspired by ISO 7010 safety signs. Not affiliated with ISO.",
+  "description": "Decorative warning signs inspired by ISO 7010 and other safety signs and hazard symbols. Unofficial; not affiliated with ISO, the United Nations or any standards body.",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",

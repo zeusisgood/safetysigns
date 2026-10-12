@@ -22,6 +22,8 @@ BLACK = (0x1A, 0x1A, 0x1A, 255)
 RED = (0x9B, 0x24, 0x23, 255)
 BLUE = (0x00, 0x53, 0x87, 255)
 GREEN = (0x23, 0x7F, 0x52, 255)
+# GHS 絵表示の枠と ISO 21482 の三角形の赤（仕様書 SPEC_2026-10-12-7.md）
+HAZARD_RED = (0xD7, 0x19, 0x1F, 255)
 WHITE = (0xFF, 0xFF, 0xFF, 255)
 CLEAR = (0, 0, 0, 0)
 
@@ -82,6 +84,21 @@ def slash(half=2.75, radius=RING_INNER + 0.5):
 def square():
     """安全状態・防火の四角（角を少し丸めた 62 角）。"""
     return rounded_rect(1, 1, UNITS - 1, UNITS - 1, 4)
+
+
+# GHS のひし形（正方形を 45° 回したもの）: 角の丸めの前のひし形（芯）の頂点。丸め（半径 DIAMOND_ROUND）で外形は 62 角になる
+DIAMOND_ROUND = 2
+DIAMOND_CORE = [(CENTER, 1.0 + DIAMOND_ROUND), (UNITS - 1.0 - DIAMOND_ROUND, CENTER),
+                (CENTER, UNITS - 1.0 - DIAMOND_ROUND), (1.0 + DIAMOND_ROUND, CENTER)]
+DIAMOND_BORDER = 4
+
+
+def diamond():
+    """GHS の形: (赤い外形, 白の中)。角を少し丸めたひし形で、赤枠の太さは DIAMOND_BORDER。"""
+    distance = polygon_distance(DIAMOND_CORE)
+    outer = Shape(lambda x, y: distance(x, y) <= DIAMOND_ROUND)
+    inner = Shape(lambda x, y: distance(x, y) <= DIAMOND_ROUND - DIAMOND_BORDER)
+    return outer, inner
 
 
 # ---- 記号: 人物 ----
@@ -389,6 +406,170 @@ def hot_surface(cx, cy, size):
                                   wavelength=12.0 * s, r=1.5 * s)
 
 
+# ---- 記号: GHS 絵表示・ISO 21482 に使うもの（仕様書 SPEC_2026-10-12-7.md） ----
+# どれも原点を中心にした高さ 40 で書き、place で置く。
+
+GHS_HEIGHT = 40
+
+
+def skull_shape():
+    """ドクロと、その下で交差する 2 本の骨（原点の中心で高さ 40）。骨は奥、ドクロは手前。"""
+    dome = circle(0.0, -7.0, 10.0)
+    jaw = rounded_rect(-6.4, -2.0, 6.4, 8.6, 2.6)
+    eyes = union(ellipse(-4.0, -6.4, 3.0, 3.4), ellipse(4.0, -6.4, 3.0, 3.4))
+    nose = polygon([(0.0, -1.4), (1.8, 2.2), (-1.8, 2.2)])
+    teeth = union(rect(-4.6, 5.0, 4.6, 5.9), rect(-2.6, 5.0, -1.7, 8.6), rect(1.7, 5.0, 2.6, 8.6))
+    skull = union(dome, jaw) - eyes - nose - teeth
+
+    def bone(p0, p1):
+        # 端の膨らみ（関節）は、骨の向きと直角に 2 つ並べた円
+        (x0, y0), (x1, y1) = p0, p1
+        length = math.hypot(x1 - x0, y1 - y0)
+        nx, ny = -(y1 - y0) / length * 1.9, (x1 - x0) / length * 1.9
+        knobs = union(*(circle(x + side * nx, y + side * ny, 2.4) for x, y in (p0, p1) for side in (-1, 1)))
+        return capsule(p0, p1, 1.9) | knobs
+    bones = union(bone((-13.4, 6.4), (13.4, 16.4)), bone((13.4, 6.4), (-13.4, 16.4)))
+    return layered(bones, skull, gap=1.2)
+
+
+def skull_crossbones(cx, cy, size):
+    """ドクロと交差した骨（急性毒性・ISO 21482）。size は骨の下の端までの高さ。"""
+    return place(skull_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def exploding_bomb_shape():
+    """爆発する爆弾（原点の中心で高さ 40）。上がぎざぎざに割れた玉と、上と左右へ飛ぶ光の線・破片。"""
+    bomb_c = (0.0, 9.0)
+    # 割れ口: 玉の上をぎざぎざの線で切る
+    teeth = [(-12.0, bomb_c[1] + 30.0), (-12.0, bomb_c[1] - 2.0)]
+    for i in range(9):
+        teeth.append((-10.8 + i * 2.7, bomb_c[1] - (7.4 if i % 2 else 3.4)))
+    teeth += [(12.0, bomb_c[1] - 2.0), (12.0, bomb_c[1] + 30.0)]
+    bomb = circle(*bomb_c, 10.4) & polygon(teeth)
+    rays = []
+    for angle in (-80, -52, -26, 0, 26, 52, 80):
+        a = math.radians(angle)
+        dx, dy = math.sin(a), -math.cos(a)
+        rays.append(tapered((bomb_c[0] + dx * 13.0, bomb_c[1] + dy * 13.0),
+                            (bomb_c[0] + dx * 20.0, bomb_c[1] + dy * 20.0), 1.3, 2.3))
+    # 光の線のあいだを飛ぶ破片（小さな四角を少し回したもの）
+    pieces = []
+    for angle in (-66, -39, -13, 13, 39, 66):
+        a = math.radians(angle)
+        px, py = bomb_c[0] + math.sin(a) * 15.0, bomb_c[1] - math.cos(a) * 15.0
+        pieces.append(rect(-1.4, -1.4, 1.4, 1.4).rotate(angle + 20, 0, 0).shift(px, py))
+    return bomb | union(*rays) | union(*pieces)
+
+
+def exploding_bomb(cx, cy, size):
+    """爆発する爆弾（GHS01）。"""
+    return place(exploding_bomb_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def flame_on_bar_shape():
+    """横棒の上の炎（原点の中心で高さ 40）。"""
+    return place(flame_shape(), FLAME_HEIGHT, 0.0, -3.0, 33.0) | rect(-12.0, 16.4, 12.0, 20.0)
+
+
+def flame_on_bar(cx, cy, size):
+    """横棒の上の炎（GHS02）。"""
+    return place(flame_on_bar_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def flame_over_circle_shape():
+    """円の上の炎と横棒（原点の中心で高さ 40）。炎の根元は円に載る。"""
+    ring_shape = annulus(0.0, 7.4, 9.0, 4.4)
+    fire = place(flame_shape(), FLAME_HEIGHT, 0.0, -8.8, 22.4)
+    return layered(fire, ring_shape, gap=1.0) | rect(-12.0, 16.4, 12.0, 20.0)
+
+
+def flame_over_circle(cx, cy, size):
+    """円の上の炎（GHS03）。"""
+    return place(flame_over_circle_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def gas_cylinder_shape():
+    """ガスボンベ（原点の中心で高さ 40 の枠に、少し傾けて寝かせる）。左が丸い底、右が肩・首・バルブ。"""
+    body = rounded_rect(-17.0, -6.4, 10.0, 6.4, 6.4) | rounded_rect(-8.0, -6.4, 9.0, 6.4, 2.4)
+    neck = rect(9.0, -2.6, 12.6, 2.6)
+    valve = rounded_rect(12.0, -4.6, 15.6, 4.6, 1.0)
+    handle = rect(14.6, -1.2, 18.0, 1.2)
+    cylinder = body | neck | valve | handle
+    return cylinder.rotate(-24, 0, 0).shift(0.0, 1.0)
+
+
+def gas_cylinder(cx, cy, size):
+    """ガスボンベ（GHS04）。"""
+    return place(gas_cylinder_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def corrosion_shape():
+    """腐食性物質（原点の中心で高さ 40）。上の 2 本の試験管からしずくが落ち、左の金属板と右の手を溶かす。"""
+    tubes = union(capsule((-13.0, -15.0), (-6.0, -10.6), 2.9), capsule((13.0, -15.0), (6.0, -10.6), 2.9))
+    drops = union(droplet(-5.6, -2.6, 8.4), droplet(5.6, -2.6, 8.4))
+    # 金属板（左）と手（右、指は右向き、親指は上）。しずくの落ちる所が欠けて溶けている
+    plate = rect(-15.0, 6.0, -1.4, 12.0) - circle(-5.6, 5.8, 3.0)
+    palm = rounded_rect(1.4, 6.0, 10.6, 12.8, 2.0)
+    fingers = union(*(capsule((9.0, y), (16.6, y), 1.0) for y in (7.2, 9.4, 11.6)))
+    thumb = capsule((8.4, 6.0), (12.4, 2.8), 1.2)
+    hand_shape_ = (palm | fingers | thumb) - circle(5.6, 5.8, 3.0)
+    ground = rect(-14.0, 15.2, 14.0, 18.0)
+    return tubes | drops | plate | hand_shape_ | ground
+
+
+def corrosion(cx, cy, size):
+    """腐食性物質（GHS05）。"""
+    return place(corrosion_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def health_hazard_shape():
+    """健康有害性（原点の中心で高さ 40）。人の胸像の胸に、白く抜いた星形。"""
+    head_ = circle(0.0, -12.0, 6.6)
+    torso = rounded_rect(-13.0, -3.0, 13.0, 30.0, 10.0) & rect(-13.0, -3.0, 13.0, 18.0)
+    points = []
+    for i in range(16):
+        a = math.radians(i * 22.5)
+        r = 9.8 if i % 2 == 0 else 4.6
+        points.append((r * math.sin(a), 8.0 - r * math.cos(a)))
+    star = polygon(points)
+    return layered(torso, head_, gap=1.2) - star
+
+
+def health_hazard(cx, cy, size):
+    """健康有害性（GHS08）。"""
+    return place(health_hazard_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def environment_shape():
+    """水生環境有害性（原点の中心で高さ 40）。左に葉の落ちた木、右に腹を上にした魚、下に地面。"""
+    trunk = tapered((-8.0, 15.0), (-8.6, -10.0), 2.8, 1.5)
+    branches = union(polyline([(-8.4, -2.0), (-13.0, -7.4), (-15.4, -14.0)], 1.4),
+                     polyline([(-8.4, -6.0), (-4.2, -11.6), (-3.0, -17.0)], 1.4),
+                     polyline([(-8.2, 3.0), (-2.4, -1.6), (0.4, -6.2)], 1.4),
+                     polyline([(-8.4, 6.6), (-14.0, 2.6), (-16.4, -1.0)], 1.4),
+                     capsule((-13.0, -7.4), (-16.6, -6.6), 1.2))
+    tree = trunk | branches
+    body = ellipse(6.0, 10.4, 7.0, 4.2)
+    tail = polygon([(11.4, 10.4), (16.0, 6.6), (16.0, 14.2)])
+    fin = polygon([(3.4, 7.0), (8.4, 7.0), (6.0, 3.6)])
+    eye = circle(1.8, 9.6, 1.3)
+    fish = (body | tail | fin) - eye
+    ground = rect(-15.0, 15.2, 15.0, 18.0)
+    return tree | fish | ground
+
+
+def environment(cx, cy, size):
+    """水生環境有害性（GHS09）。"""
+    return place(environment_shape(), GHS_HEIGHT, cx, cy, size)
+
+
+def radiation_waves(cx, cy, angles=(-32, 0, 32), start=7.0, end=14.0, amplitude=0.9, wavelength=5.8, r=0.75):
+    """放射線の波: 中心 (cx, cy) から外へ向かう波線を、angles（度。下が 0 で時計回り）の向きに 1 本ずつ描く。
+    波線は中心から start〜end の距離に置く。"""
+    wave = sine_band(start, end, 0.0, amplitude, wavelength, r, vertical=True)
+    return union(*(wave.rotate(angle, 0, 0).shift(cx, cy) for angle in angles))
+
+
 # 部品の一覧画像（doc/textures/parts.png）に並べる部品: (見出し, 図形)。設計の座標の中心に高さ 44 前後で置く
 def catalog():
     c = CENTER
@@ -417,4 +598,13 @@ def catalog():
         ("trefoil", trefoil(c, c, 44)),
         ("explosion", explosion(c, c, 44)),
         ("hot surface", hot_surface(c, c, 40)),
+        ("skull and crossbones", skull_crossbones(c, c, 44)),
+        ("exploding bomb", exploding_bomb(c, c, 44)),
+        ("flame on bar", flame_on_bar(c, c, 44)),
+        ("flame over circle", flame_over_circle(c, c, 44)),
+        ("gas cylinder", gas_cylinder(c, c, 44)),
+        ("corrosion", corrosion(c, c, 44)),
+        ("health hazard", health_hazard(c, c, 44)),
+        ("environment", environment(c, c, 44)),
+        ("radiation waves", trefoil(c, c - 10, 16) | radiation_waves(c, c - 10, start=11, end=25, amplitude=1.6, wavelength=11.0, r=1.4)),
     ]

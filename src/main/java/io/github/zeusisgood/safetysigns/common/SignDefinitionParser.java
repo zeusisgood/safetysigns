@@ -93,10 +93,16 @@ public final class SignDefinitionParser {
             warnings.add(where + ": id の名前空間がファイルの名前空間 " + namespace + " と違う");
             return null;
         }
-        SignCategory category = SignCategory.fromLetter(getString(json, "category"));
-        if (category == null) {
-            warnings.add(where + ": category は E F M P W のどれか");
+        String categoryName = getString(json, "category");
+        if (categoryName == null || categoryName.trim().isEmpty()) {
+            warnings.add(where + ": category がない");
             return null;
+        }
+        SignCategory category = SignCategory.fromName(categoryName);
+        if (category == null) {
+            // 知らない分類（新しい版の Mod 向けのパックなど）は捨てずに「その他」のタブに出す
+            warnings.add(where + ": category " + categoryName + " を知らないので OTHER として扱う");
+            category = SignCategory.OTHER;
         }
         String code = getString(json, "code");
         if (code == null || code.isEmpty()) {

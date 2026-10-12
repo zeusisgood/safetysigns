@@ -21,7 +21,7 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 | ファイル | 役目 |
 |---|---|
 | `raster.py` | 図形（`Shape`: 点が内側かを答える関数）と、組み合わせ・移動・回転と、マス目に塗る `fill` |
-| `parts.py` | 色、標識の形（三角・円・輪・斜線・四角）、記号の部品 |
+| `parts.py` | 色、標識の形（三角・円・輪・斜線・四角・ひし形）、記号の部品 |
 | `generate.py` | 標識の形ごとの描き方（`warning` など）、図柄の定義 `SIGNS`、一覧画像、無地・「?」・裏面・支柱 |
 
 流れの図は [diagrams/texture-generation.md](diagrams/texture-generation.md)、決定は [ADR 0009](adr/0009-generate-textures-from-parts-with-manual-overrides.md) と [ADR 0011](adr/0011-draw-textures-on-a-resolution-independent-grid.md)。
@@ -41,13 +41,16 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 | 指示の青 | `#005387` |
 | 安全状態の緑 | `#237F52` |
 | 白 | `#FFFFFF` |
+| GHS の枠・ISO 21482 の赤（`HAZARD_RED`） | `#D7191F` |
 
-- 形（`generate.py` の `warning` / `prohibition` / `mandatory` / `safe_condition` / `fire`）。どれも外側に 1 単位の透明な余白を残して 62 単位に収める:
+- 形（`generate.py` の `warning` / `prohibition` / `mandatory` / `safe_condition` / `fire` / `ghs` / `ionizing_radiation`）。どれも外側に 1 単位の透明な余白を残して 62 単位に収める:
   - 警告（W）: 黄の正三角形に黒枠と黒の記号。角は半径 3 で丸め、黒枠は 5（`parts.warning_triangle`）。中の黄色の重心は 41 行目あたり（`parts.TRIANGLE_SYMBOL_Y`）。
   - 禁止（P）: 白い円に黒の記号。その上に赤い輪（太さ 6）と左上→右下の斜線（幅 5.5）を重ねる。
   - 指示（M）: 青い円に白の記号。
   - 安全状態（E）: 緑の四角（角を半径 4 で丸める）に白の記号。
   - 防火（F）: 赤の四角に白の記号。
+  - GHS: 白地のひし形（正方形を 45° 回したもの）に赤 `#D7191F` の枠（4）と黒の記号。角は半径 2 で丸める（`parts.diamond`）。記号はひし形の中の正方形（中心から縦横 12 くらい）に収まるように置き、横棒・骨の端などは角に寄せすぎない。
+  - ISO 21482（`ionizing_radiation`）: 警告と同じ三角形に、黄の代わりに赤 `#D7191F`、黒枠と黒の記号。
 - 記号は、地（黄・白・青・緑・赤）の縁から 1.5 単位以上離す。近すぎるとスクリプトが止まる（`check_margin`。解像度によらず、細かいマス目で確かめる）。止まったら、記号を小さくするか位置をずらす。
 - 形の中心は 32（ピクセルの境目）。左右対称の記号は中心を 32 に置くと、左右のピクセルがちょうど揃う。
 
@@ -65,6 +68,8 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 | 炎・稲妻・しずく・歯車 | `flame` `lightning` `droplet` `gear` | |
 | 波 | `waves`（横に流れる）・`rising_waves`（縦に立ちのぼる） | |
 | 警告の記号 | `exclamation` `trefoil` `explosion` `hot_surface` | W001・W003・W002・W017 |
+| GHS の記号 | `exploding_bomb` `flame_on_bar` `flame_over_circle` `gas_cylinder` `corrosion` `skull_crossbones` `health_hazard` `environment` | GHS01〜GHS09（GHS07 は `exclamation`）。どれも原点の中心で高さ 40（`GHS_HEIGHT`）で書いている |
+| 放射線の波 | `radiation_waves(cx, cy, angles)` | 中心から外へ向かう波線（ISO 21482） |
 
 部品を足すときは、原点を中心にした決まった高さで形を書き、`place` で置く（`hand_shape` と `hand` の組を見る）。形は `raster.py` の基本の図形（円・楕円・四角・角の丸い四角・太線 `capsule`・太さの変わる線 `tapered`・折れ線 `polyline`・多角形・輪・波）を `|`（足す）・`-`（抜く）・`&`（重なり）で組む。
 重なった部品の境目を見せたいときは `raster.layered(奥, 手前, gap=1.0)`（手前の周りを gap だけ抜く）。

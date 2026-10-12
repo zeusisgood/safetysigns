@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * 全パックの定義をマージした図柄の一覧（クライアントだけが持つ）。
- * 並びはカテゴリ（W P M E F）→ コードの順。
+ * 並びはカテゴリ（W P M E F GHS OTHER）→ コードの順。
  */
 public final class SignCatalog {
 

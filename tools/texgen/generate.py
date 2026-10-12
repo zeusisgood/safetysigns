@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import parts
 import raster
-from parts import BLACK, BLUE, CLEAR, GREEN, RED, WHITE, YELLOW
+from parts import BLACK, BLUE, CLEAR, GREEN, HAZARD_RED, RED, WHITE, YELLOW
 
 ROOT = Path(__file__).resolve().parents[2]
 TEXTURES = ROOT / "src/main/resources/assets/safetysigns/textures"
@@ -121,6 +121,30 @@ def fire(*symbols):
     return {"category": "F", "colors": {RED, WHITE}, "draw": draw}
 
 
+def ghs(*symbols):
+    """GHS 絵表示: 白地のひし形に赤枠と黒の記号（仕様書 SPEC_2026-10-12-7.md）。"""
+    def draw(image):
+        outer, inner = parts.diamond()
+        raster.fill(image, outer, HAZARD_RED)
+        raster.fill(image, inner, WHITE)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, inner)
+        raster.fill(image, symbol, BLACK)
+    return {"category": "GHS", "colors": {WHITE, HAZARD_RED, BLACK}, "draw": draw}
+
+
+def ionizing_radiation(*symbols):
+    """ISO 21482（電離放射線）: 赤の正三角形に黒枠と黒の記号。三角形は警告と同じ形（仕様書 SPEC_2026-10-12-7.md）。"""
+    def draw(image):
+        outer, inner = parts.warning_triangle()
+        raster.fill(image, outer, BLACK)
+        raster.fill(image, inner, HAZARD_RED)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, inner)
+        raster.fill(image, symbol, BLACK)
+    return {"category": "OTHER", "colors": {HAZARD_RED, BLACK}, "draw": draw}
+
+
 # ---- 図柄の定義 ----
 # キーはテクスチャのファイル名（textures/signs/<キー>.png）。部品の位置と大きさは設計の単位（0〜64、中心 32）。
 # 三角形の記号は、中の黄色の重心（parts.TRIANGLE_SYMBOL_Y）の辺りに置く。
@@ -138,6 +162,19 @@ SIGNS = {
     "m010": mandatory(parts.coverall_person(C, C + 0.5, 48)),
     "p004": prohibition(parts.person(C - 0.5, C, 44, "walking")),
     "p010": prohibition(parts.hand(C + 1, C + 0.5, 42)),
+    "ghs01": ghs(parts.exploding_bomb(C, C, 30)),
+    "ghs02": ghs(parts.flame_on_bar(C, C, 30)),
+    "ghs03": ghs(parts.flame_over_circle(C, C, 30)),
+    "ghs04": ghs(parts.gas_cylinder(C, C, 36)),
+    "ghs05": ghs(parts.corrosion(C, C, 30)),
+    "ghs06": ghs(parts.skull_crossbones(C, C - 2.5, 30)),
+    "ghs07": ghs(parts.exclamation(C, C, 30)),
+    "ghs08": ghs(parts.health_hazard(C, C, 30)),
+    "ghs09": ghs(parts.environment(C, C - 1, 29)),
+    "iso21482": ionizing_radiation(parts.trefoil(C, 27.0, 10.5),
+                                   parts.radiation_waves(C, 27.0, start=7.2, end=13.0),
+                                   parts.skull_crossbones(20.5, 46.0, 14),
+                                   parts.person(42.0, 46.5, 14, "running")),
 }
 
 
@@ -277,10 +314,19 @@ def write_parts(size):
     write_sheet(PARTS_PREVIEW, entries, cell_bg=WHITE)
 
 
-# 手で描いただけの図柄（SIGNS にない名前）を確かめる色。名前の先頭の文字で分類を決める
-CATEGORY_COLORS = {"w": {YELLOW, BLACK}, "p": {WHITE, RED, BLACK}, "m": {BLUE, WHITE}, "e": {GREEN, WHITE},
+# 手で描いただけの図柄（SIGNS にない名前）を確かめる色。名前の先頭で分類を決める（長い接頭辞から順に見る）
+CATEGORY_COLORS = {"ghs": {WHITE, HAZARD_RED, BLACK}, "iso21482": {HAZARD_RED, BLACK},
+                   "w": {YELLOW, BLACK}, "p": {WHITE, RED, BLACK}, "m": {BLUE, WHITE}, "e": {GREEN, WHITE},
                    "f": {RED, WHITE}}
-ALL_COLORS = {YELLOW, BLACK, RED, BLUE, GREEN, WHITE}
+ALL_COLORS = {YELLOW, BLACK, RED, BLUE, GREEN, WHITE, HAZARD_RED}
+
+
+def manual_colors(name):
+    """手で描いただけの図柄の、使ってよい色（名前の接頭辞で決める。知らなければ全部の色）。"""
+    for prefix in sorted(CATEGORY_COLORS, key=len, reverse=True):
+        if name.startswith(prefix):
+            return CATEGORY_COLORS[prefix]
+    return ALL_COLORS
 
 
 def parse_size():
@@ -301,7 +347,7 @@ def main():
     for name in list(SIGNS) + manual_only:
         sign = SIGNS.get(name)
         if (MANUAL / f"{name}.png").exists():
-            allowed = sign["colors"] if sign else CATEGORY_COLORS.get(name[0], ALL_COLORS)
+            allowed = sign["colors"] if sign else manual_colors(name)
             image = load_manual(name, allowed, size)
             source = "manual"
         else:
