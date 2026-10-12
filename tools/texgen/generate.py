@@ -114,10 +114,10 @@ def blank():
 def pole():
     """ポールの支柱（16×16。モデルは左端の 4 列を 4 ピクセル角の支柱の各面に貼る）。仮のテクスチャ。"""
     image = Image.new("RGBA", (16, 16), POLE)
-    for x in range(16):
-        color = {0: POLE_LIGHT, 3: POLE_DARK}.get(x % 4, POLE)
-        for y in range(16):
-            image.putpixel((x, y), color)
+    draw = ImageDraw.Draw(image)
+    for x in range(0, 16, 4):
+        draw.line([(x, 0), (x, 15)], fill=POLE_LIGHT)
+        draw.line([(x + 3, 0), (x + 3, 15)], fill=POLE_DARK)
     return image
 
 
