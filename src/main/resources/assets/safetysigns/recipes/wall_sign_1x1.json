@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "safetysigns:sign",
+  "ingredients": [
+    { "item": "minecraft:sign" },
+    [
+      { "type": "forge:ore_dict", "ore": "ingotIron" },
+      { "type": "forge:ore_dict", "ore": "plateIron" }
+    ]
+  ],
+  "result": { "item": "safetysigns:wall_sign_1x1", "count": 1 }
+}

@@ -1,6 +1,6 @@
 # 仕組み（アーキテクチャ）
 
-現在の実装（0.6.0、仕様書「9. 作業の順番」の 6 までと [SPEC_2026-10-12-3](spec/SPEC_2026-10-12-3.md)・[SPEC_2026-10-12-4](spec/SPEC_2026-10-12-4.md)）の全体構成と主要な流れ。
+現在の実装（1.0.0、仕様書「9. 作業の順番」の 8 までと [SPEC_2026-10-12-2](spec/SPEC_2026-10-12-2.md)〜[SPEC_2026-10-12-5](spec/SPEC_2026-10-12-5.md)）の全体構成と主要な流れ。
 仕組みを変えたら、同じ PR でこの文書と図を直す。条件付きの図は [`diagrams/`](diagrams/) にある。
 
 ## 全体構成
@@ -23,6 +23,7 @@
 | `tile/TileEntitySafetySign` | 図柄 ID を持つ（代表のマスだけ）。保存とクライアントへの同期 | 両方 |
 | `item/ItemSafetySign`・`item/SignNbt` | 看板アイテム（ツールチップに図柄と、既定と違う切り抜き・裏面・光るか）。複数マスの看板は全部のマスに置けるときだけ置く。スニーク右クリックで看板の見た目を写す。NBT のキー `SignId`・`Cutout`・`BackPattern`・`Glow` の読み書き | 両方 |
 | `recipe/RecipeClearSign`・`recipe/SafetySignsRecipes` | 看板アイテム 1 個だけで無地に戻すレシピ（`safetysigns:clear_sign`）とその登録 | 両方 |
+| `assets/safetysigns/recipes/*.json` | 看板を作るレシピ（不定形。木の看板 + 鉄。鉄は鉱石辞書 `ingotIron`・`plateIron`。[ADR 0010](adr/0010-craft-signs-with-shapeless-json-recipes.md)） | 両方 |
 | `network/MessageSetSign` | クライアント → サーバー: 見た目（図柄・切り抜き・裏面・光るか）を変える。サーバーが形・距離・場所を確かめる | 両方 |
 | `common/` | Minecraft に依存しない計算: 図柄 ID の形（`SignIds`）、定義ファイルの読み取り（`SignDefinitionParser`）、マージと検索（`SignCatalog`）、看板が使うマスの計算と置けるかの判定（`SignLayout`・`GridPos`）、テクスチャのアルファから切り抜いた板の形（`SignOutline`）、看板の見た目の値（`SignAppearance`） | 両方（使うのは主にクライアント） |
 | `client/SignTextures` | 定義ファイルを全パックから読んでマージし、図柄のテクスチャを登録する。テクスチャの PNG から板の形を作って取っておく | クライアントだけ |
@@ -40,7 +41,7 @@ flowchart LR
         TE["TileEntitySafetySign<br/>NBT: SignId・Cutout・BackPattern・Glow"]
         Msg["MessageSetSign"]
         Common["common/<br/>SignIds・SignCatalog・SignLayout"]
-        Recipe["recipe/<br/>無地に戻すレシピと登録"]
+        Recipe["recipe/・recipes/*.json<br/>作るレシピ・無地に戻すレシピ"]
     end
     subgraph Client["クライアントだけ"]
         Tex["SignTextures<br/>定義の読み込み"]
@@ -56,7 +57,7 @@ flowchart LR
     Block -- マスの計算 --> Common
     Item -- 全部のマスに置けるか --> Common
     TE -- 写す・ドロップ・ピックブロック --> Item
-    Recipe -- NBT を外す --> Item
+    Recipe -- 作る・NBT を外す --> Item
     Block -- openGui --> Gui
     Json --> Tex
     Tex -- マージ・検索・板の形 --> Common
