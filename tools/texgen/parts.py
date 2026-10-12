@@ -11,7 +11,7 @@ import math
 
 from PIL import Image
 
-from raster import (NOTHING, UNITS, annulus, arc_band, capsule, circle, dilate, ellipse, layered, polygon,
+from raster import (NOTHING, UNITS, annulus, arc_band, capsule, circle, dilate, ellipse, layered, outline, polygon,
                     polygon_distance, polyline, rect, rounded_rect, sine_band, tapered, union, Shape)
 
 CENTER = UNITS / 2
@@ -507,37 +507,57 @@ def gas_cylinder(cx, cy, size):
     return place(gas_cylinder_shape(), GHS_HEIGHT, cx, cy, size)
 
 
+# 白抜きの輪郭線の太さ（設計の単位。128×128 で 1.5 ピクセル前後）
+CORROSION_LINE = 0.6
+
+
 def corrosion_shape():
     """腐食性物質（原点の中心で高さ 40。128×128 で描く前提の細かさ）。
 
-    上に、底を内側に寄せて傾けた試験管 2 本（V の形）。口から落ちるしずくが、下の左の金属板と下の右の手に
-    かかって、かかった所が欠けている。下の 2 つを大きく描く。
+    すべてをひし形の中央の横長の帯に収める（上下に積まない）。
+    左半分: 左下へ少し傾いた試験管から液がこぼれ、下の横長の平たい板（黒）の上面が、液のかかった所で欠けている。
+    右半分: 右下へ少し傾いた試験管から液がこぼれ、下の手のひらを下にした手が、液のかかった所で欠けている。
+    2 本の試験管はほぼ水平で、丸い底が中央で少し離れて向かい合う。試験管と手は白抜きの輪郭線、板としずくは塗りつぶし。
+    液のかかった所から、波線の煙を 3 本ずつ立てる。
     """
-    def tube(closed, mouth):
-        # 試験管: 底は丸く、口は平らに切って縁を少し広げる
-        (x0, y0), (x1, y1) = closed, mouth
+    line = CORROSION_LINE
+
+    def tube(bottom, mouth):
+        # 試験管: 底は丸く、口は平らに切って縁を少し広げる。輪郭線だけ
+        (x0, y0), (x1, y1) = bottom, mouth
         dx, dy = x1 - x0, y1 - y0
         length = math.hypot(dx, dy)
         ux, uy = dx / length, dy / length
-        body = capsule(closed, mouth, 2.1) - Shape(lambda x, y: (x - x1) * ux + (y - y1) * uy > 0)
-        lip = capsule((x1 - uy * 2.8 - ux * 0.5, y1 + ux * 2.8 - uy * 0.5),
-                      (x1 + uy * 2.8 - ux * 0.5, y1 - ux * 2.8 - uy * 0.5), 0.7)
-        return body | lip
-    tubes = tube((-3.6, -15.4), (-9.2, -9.4)) | tube((3.6, -15.4), (9.2, -9.4))
-    # 口から落ちるしずく（小さいのと大きいの）
-    drops = union(*(droplet(side * 9.8, -5.8, 2.6) | droplet(side * 9.8, -1.4, 5.4) for side in (-1, 1)))
+        body = capsule(bottom, mouth, 1.9) - Shape(lambda x, y: (x - x1) * ux + (y - y1) * uy > 0)
+        lip = capsule((x1 - uy * 2.3, y1 + ux * 2.3), (x1 + uy * 2.3, y1 - ux * 2.3), line / 2)
+        return outline(body, line) | lip
 
-    # 下の左: 金属板。しずくの落ちた所が丸くえぐれ、縁がぎざぎざに溶けている
-    plate = rounded_rect(-13.4, 3.2, -2.4, 10.6, 0.8)
-    plate_bite = circle(-9.8, 3.0, 3.0) | circle(-12.6, 3.2, 1.2) | circle(-7.0, 3.4, 1.1)
-    # 下の右: 手（甲を上に、指は右）。しずくの落ちた所が欠けている
-    palm = rounded_rect(2.0, 3.2, 10.8, 11.0, 2.0)
-    fingers = union(capsule((10.0, 4.4), (14.2, 4.4), 0.9), capsule((10.0, 6.6), (14.8, 6.6), 0.9),
-                    capsule((10.0, 8.8), (14.0, 8.8), 0.9), capsule((9.6, 10.4), (12.6, 10.6), 0.8))
-    thumb = capsule((7.6, 3.6), (10.8, 0.8), 1.0)
-    hand_ = palm | fingers | thumb
-    hand_bite = circle(9.8, 3.0, 3.0) | circle(7.0, 3.4, 1.1)
-    return tubes | drops | (plate - plate_bite) | (hand_ - hand_bite)
+    def smoke(x, bottom, top):
+        # 縦に立ちのぼる細い波線
+        return sine_band(bottom, top, x, 0.55, 2.6, 0.42, vertical=True)
+
+    def side(sign):
+        """sign=-1 で左半分、+1 で右半分の、試験管・しずく・煙（板と手は別）。"""
+        bottom, mouth = (sign * 3.0, -7.8), (sign * 14.4, -5.6)
+        drop_x = sign * 13.0
+        drops = droplet(drop_x, -1.8, 3.4)
+        smokes = union(*(smoke(drop_x + dx, 0.6, -3.2) for dx in (-2.6, 2.6, sign * 4.8)))
+        return tube(bottom, mouth) | drops | smokes
+
+    # 左: 横長の平たい板（塗りつぶし）。液のかかった上面が欠けている
+    bite_left = circle(-13.0, 2.2, 2.2) | circle(-10.8, 2.5, 1.0) | circle(-15.2, 2.6, 1.0)
+    plate = rect(-18.0, 2.4, -3.6, 5.6) - bite_left
+    # 右: 手のひらを下にした手（指は中央へ向く）。甲・指・親指をそれぞれ輪郭線で描いて重ね（指の境目が見える）、
+    # 液のかかった甲の上が欠けている
+    bite_right = circle(13.0, 1.6, 2.2) | circle(15.2, 2.0, 1.0)
+    back = rounded_rect(8.4, 1.6, 18.6, 6.6, 2.0) - bite_right
+    fingers = [capsule((9.4, 2.5), (4.4, 2.3), 0.9), capsule((9.4, 4.0), (3.6, 4.0), 0.9),
+               capsule((9.4, 5.4), (4.2, 5.6), 0.85), capsule((9.4, 6.4), (5.6, 6.9), 0.75)]
+    thumb = capsule((10.6, 2.2), (6.6, 1.0), 0.8)
+    hand_ = outline(back, line)
+    for part in fingers + [thumb]:
+        hand_ = hand_ | (outline(part, line) - back)
+    return side(-1) | side(1) | plate | hand_
 
 
 def corrosion(cx, cy, size):

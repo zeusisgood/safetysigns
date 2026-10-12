@@ -209,3 +209,14 @@ def layered(*shapes, gap=1.0):
     for shape in shapes:
         result = (result - dilate(shape, gap)) | shape
     return result
+
+
+def erode(shape, r, directions=16):
+    """shape を r だけ細らせた形（dilate の裏返し）。"""
+    outside = dilate(Shape(lambda x, y: not shape.inside(x, y)), r, directions)
+    return Shape(lambda x, y: not outside.inside(x, y))
+
+
+def outline(shape, width):
+    """shape の輪郭線（内側へ太さ width）。塗りつぶさずに線で描く部品（試験管・手など）に使う。"""
+    return shape - erode(shape, width)
