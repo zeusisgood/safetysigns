@@ -1,14 +1,14 @@
 package io.github.zeusisgood.safetysigns.item;
 
+import io.github.zeusisgood.safetysigns.block.BlockSafetySign;
 import io.github.zeusisgood.safetysigns.client.SignTextures;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
-import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -24,10 +24,11 @@ import java.util.List;
  * 看板の設置用アイテム。図柄 ID をタグの直下（{@link SignNbt#KEY}）に持つ。
  * 図柄違いは NBT だけが違う同じアイテム（スタックしないのは仕様）。
  * スニークして設置済みの看板を右クリックすると、設置せずにその看板の図柄を写す（doc/diagrams/right-click.md）。
+ * 複数マスの看板は、全部のマスに置けるときだけ置く（doc/diagrams/multiblock.md）。
  */
 public class ItemSafetySign extends ItemBlock {
 
-    public ItemSafetySign(Block block) {
+    public ItemSafetySign(BlockSafetySign block) {
         super(block);
         setRegistryName(block.getRegistryName());
     }
@@ -43,17 +44,49 @@ public class ItemSafetySign extends ItemBlock {
     public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing,
             float hitX, float hitY, float hitZ) {
         // スニーク中はバニラが看板の onBlockActivated を呼ばずにここへ来る。看板なら図柄を写して終わり（設置しない）
-        TileEntity tile = world.getTileEntity(pos);
-        if (player.isSneaking() && tile instanceof TileEntitySafetySign) {
+        // 複数マスの看板は、どのマスを狙っても代表のマスの図柄
+        TileEntitySafetySign tile = BlockSafetySign.getSignTile(world, pos);
+        if (player.isSneaking() && tile != null) {
             if (!world.isRemote) {
                 // 書き換えはサーバーだけ（手のアイテムはバニラの同期でクライアントへ届く）。
                 // 種類・サイズは違ってよい。スタックはまとめて写す（図柄違いはもともとスタックしないため）。
                 // 一覧にない ID もそのまま写す（設置するときに形を確かめる）
-                SignNbt.setSignId(player.getHeldItem(hand), ((TileEntitySafetySign) tile).getSignId());
+                SignNbt.setSignId(player.getHeldItem(hand), tile.getSignId());
             }
             return EnumActionResult.SUCCESS;
         }
         return super.onItemUse(player, world, pos, hand, facing, hitX, hitY, hitZ);
+    }
+
+    @Override
+    public boolean placeBlockAt(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumFacing side,
+            float hitX, float hitY, float hitZ, IBlockState newState) {
+        // pos は代表のマス（ItemBlock が置けるか確かめ済み）。ほかのマスも 1 つでも置けなければ失敗にする。
+        // false を返すと ItemBlock はアイテムを減らさない
+        BlockSafetySign sign = (BlockSafetySign) block;
+        if (!sign.getLayout().canPlace(BlockSafetySign.toGrid(pos), newState.getValue(BlockSafetySign.FACING).getHorizontalIndex(),
+                cell -> canPlacePart(BlockSafetySign.toBlockPos(cell), stack, player, world, side))) {
+            return false;
+        }
+        // 代表のマス（TileEntity と図柄の引き継ぎは onBlockPlacedBy）
+        if (!super.placeBlockAt(stack, player, world, pos, side, hitX, hitY, hitZ, newState)) {
+            return false;
+        }
+        List<BlockPos> cells = sign.getCells(newState, pos);
+        for (int part = 1; part < cells.size(); part++) {
+            if (!world.setBlockState(cells.get(part), sign.withPart(newState, part), 11)) {
+                // 置けなかったら全体を消す（代表のマスを消せば breakBlock が残りを消す）
+                world.setBlockToAir(pos);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 看板の 1 マスを置けるか（置き換え可能・高さの範囲・いじってよい場所・人や物とぶつからない）。 */
+    private boolean canPlacePart(BlockPos cell, ItemStack stack, EntityPlayer player, World world, EnumFacing side) {
+        return !world.isOutsideBuildHeight(cell) && player.canPlayerEdit(cell, side, stack)
+                && world.mayPlace(block, cell, false, side, null);
     }
 
     @Override

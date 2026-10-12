@@ -1,7 +1,10 @@
 package io.github.zeusisgood.safetysigns;
 
+import io.github.zeusisgood.safetysigns.block.BlockSafetySign;
 import io.github.zeusisgood.safetysigns.client.gui.GuiSignPicker;
+import io.github.zeusisgood.safetysigns.common.SignLayout;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
@@ -19,10 +22,13 @@ public class SafetySignsGuiHandler implements IGuiHandler {
     @Override
     public Object getClientGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
         if (id == SafetySignsMod.GUI_SIGN_PICKER) {
+            // pos は代表のマス（BlockSafetySign.onBlockActivated がたどって開く）
             BlockPos pos = new BlockPos(x, y, z);
+            IBlockState state = world.getBlockState(pos);
             TileEntity tile = world.getTileEntity(pos);
-            if (tile instanceof TileEntitySafetySign) {
-                return new GuiSignPicker(pos, ((TileEntitySafetySign) tile).getSignId());
+            if (state.getBlock() instanceof BlockSafetySign && tile instanceof TileEntitySafetySign) {
+                SignLayout layout = ((BlockSafetySign) state.getBlock()).getLayout();
+                return new GuiSignPicker(pos, ((TileEntitySafetySign) tile).getSignId(), layout.getWidth(), layout.getHeight());
             }
         }
         return null;

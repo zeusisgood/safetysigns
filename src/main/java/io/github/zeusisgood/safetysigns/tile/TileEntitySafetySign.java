@@ -6,6 +6,9 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -13,6 +16,7 @@ import java.util.Objects;
 /**
  * 看板の図柄 ID を持つ TileEntity。図柄がなければ「無地」（NBT にキーを書かない）。
  * サーバーは図柄の一覧を知らないので、ID の文字列をそのまま保存・同期するだけ。
+ * 複数マスの看板では、代表のマス（左下）だけが持つ。
  */
 public class TileEntitySafetySign extends TileEntity {
 
@@ -57,6 +61,14 @@ public class TileEntitySafetySign extends TileEntity {
     @Override
     public boolean onlyOpsCanSetNbt() {
         return true;
+    }
+
+    // 描画の範囲。複数マスの看板は代表のマスから右・上へ広がるので、向きによらず覆えるよう周り 1 マスまで広げる
+    // （既定の 1 マスのままだと、代表のマスが画面の外に出たときに図柄ごと描かれなくなる）
+    @Override
+    @SideOnly(Side.CLIENT)
+    public AxisAlignedBB getRenderBoundingBox() {
+        return new AxisAlignedBB(pos.add(-1, 0, -1), pos.add(2, 2, 2));
     }
 
     // チャンクを送るときの同期
