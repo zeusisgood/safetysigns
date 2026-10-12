@@ -2,10 +2,10 @@
 
 [日本語](README.md)
 
-A Minecraft mod that adds decorative warning signs inspired by ISO 7010 safety signs.
+A Minecraft mod that adds decorative warning signs inspired by ISO 7010 and other safety signs and hazard symbols.
 Put a "radioactive material" sign around your reactor or an "electricity" sign on your switchboard. The signs are purely decorative and have no gameplay effect.
 
-> **This is an unofficial mod and is not affiliated with ISO (the International Organization for Standardization).** The pictograms were drawn for this mod with ISO 7010 as a reference.
+> **This is an unofficial mod and is not affiliated with ISO, the United Nations or any standards body.** The pictograms were drawn for this mod with ISO 7010, the GHS (Globally Harmonized System of Classification and Labelling of Chemicals) and ISO 21482 as references.
 
 ![Sign list](doc/textures/preview.png)
 
@@ -32,7 +32,7 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 
 - Signs face one of 4 directions, toward the player who placed them.
 - If any part of a 2x2 or pole sign is broken, the whole sign is removed and drops a single item.
-- The plate is cut out to the shape of the pictogram (triangle or circle).
+- The plate is cut out to the shape of the pictogram (triangle, circle or diamond).
 
 ## Controls
 
@@ -47,7 +47,7 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 
 ### Pictogram picker
 
-- Use the tabs at the top (Warning, Prohibition, Mandatory action, Safe condition, Fire equipment) and pick a pictogram from the grid. **It is applied to the sign right away** (no confirm button).
+- Use the tabs at the top (Warning, Prohibition, Mandatory action, Safe condition, Fire equipment, GHS, Other) and pick a pictogram from the grid. **It is applied to the sign right away** (no confirm button).
 - The search box filters by code (`W003` etc.), English name, Japanese name and keywords, across all categories.
 - "Reset to blank" removes the pictogram.
 - Each sign has the following settings (also applied right away).
@@ -70,6 +70,16 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 | M010 | Mandatory action | Wear protective clothing |
 | P004 | Prohibition | No thoroughfare |
 | P010 | Prohibition | Do not touch |
+| GHS01 | GHS | Exploding bomb |
+| GHS02 | GHS | Flame |
+| GHS03 | GHS | Flame over circle |
+| GHS04 | GHS | Gas cylinder |
+| GHS05 | GHS | Corrosion |
+| GHS06 | GHS | Skull and crossbones |
+| GHS07 | GHS | Exclamation mark |
+| GHS08 | GHS | Health hazard |
+| GHS09 | GHS | Environment |
+| ISO 21482 | Other | Ionizing radiation (large sources) |
 
 Resource packs can add or replace pictograms (see [doc/resourcepack.md](doc/resourcepack.md), in Japanese). Players without the pack see a "?" pictogram.
 

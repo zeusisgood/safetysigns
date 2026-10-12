@@ -63,6 +63,86 @@
       "texture": "safetysigns:signs/p010",
       "names": { "en_us": "Do not touch", "ja_jp": "触るな" },
       "keywords": ["do not touch", "hands off", "触れるな", "接触禁止"]
+    },
+    {
+      "id": "safetysigns:iso21482",
+      "category": "OTHER",
+      "code": "ISO 21482",
+      "texture": "safetysigns:signs/iso21482",
+      "names": { "en_us": "Ionizing radiation (large sources)", "ja_jp": "電離放射線（大量の線源）" },
+      "keywords": ["radiation", "ionizing", "radioactive", "nuclear", "skull", "run", "放射線", "電離放射線", "放射能", "線源", "逃げる"]
+    },
+    {
+      "id": "safetysigns:ghs01",
+      "category": "GHS",
+      "code": "GHS01",
+      "texture": "safetysigns:signs/ghs01",
+      "names": { "en_us": "Exploding bomb", "ja_jp": "爆弾の爆発" },
+      "keywords": ["explosive", "explosion", "bomb", "self-reactive", "organic peroxide", "爆発", "爆発物", "爆弾", "自己反応性", "有機過酸化物"]
+    },
+    {
+      "id": "safetysigns:ghs02",
+      "category": "GHS",
+      "code": "GHS02",
+      "texture": "safetysigns:signs/ghs02",
+      "names": { "en_us": "Flame", "ja_jp": "炎" },
+      "keywords": ["flammable", "fire", "flame", "pyrophoric", "可燃性", "引火性", "炎", "火", "自然発火性"]
+    },
+    {
+      "id": "safetysigns:ghs03",
+      "category": "GHS",
+      "code": "GHS03",
+      "texture": "safetysigns:signs/ghs03",
+      "names": { "en_us": "Flame over circle", "ja_jp": "円上の炎" },
+      "keywords": ["oxidizing", "oxidiser", "oxidizer", "酸化性", "支燃性"]
+    },
+    {
+      "id": "safetysigns:ghs04",
+      "category": "GHS",
+      "code": "GHS04",
+      "texture": "safetysigns:signs/ghs04",
+      "names": { "en_us": "Gas cylinder", "ja_jp": "ガスボンベ" },
+      "keywords": ["gas", "compressed gas", "gas under pressure", "cylinder", "高圧ガス", "ガス", "ボンベ"]
+    },
+    {
+      "id": "safetysigns:ghs05",
+      "category": "GHS",
+      "code": "GHS05",
+      "texture": "safetysigns:signs/ghs05",
+      "names": { "en_us": "Corrosion", "ja_jp": "腐食性" },
+      "keywords": ["corrosive", "corrosion", "acid", "金属腐食性", "皮膚腐食性", "眼損傷", "腐食", "酸"]
+    },
+    {
+      "id": "safetysigns:ghs06",
+      "category": "GHS",
+      "code": "GHS06",
+      "texture": "safetysigns:signs/ghs06",
+      "names": { "en_us": "Skull and crossbones", "ja_jp": "どくろ" },
+      "keywords": ["toxic", "poison", "acute toxicity", "skull", "急性毒性", "毒", "毒物", "ドクロ"]
+    },
+    {
+      "id": "safetysigns:ghs07",
+      "category": "GHS",
+      "code": "GHS07",
+      "texture": "safetysigns:signs/ghs07",
+      "names": { "en_us": "Exclamation mark", "ja_jp": "感嘆符" },
+      "keywords": ["harmful", "irritant", "exclamation", "有害性", "刺激性", "感嘆符", "注意"]
+    },
+    {
+      "id": "safetysigns:ghs08",
+      "category": "GHS",
+      "code": "GHS08",
+      "texture": "safetysigns:signs/ghs08",
+      "names": { "en_us": "Health hazard", "ja_jp": "健康有害性" },
+      "keywords": ["health hazard", "carcinogen", "mutagen", "sensitizer", "健康有害性", "発がん性", "呼吸器感作性", "生殖毒性"]
+    },
+    {
+      "id": "safetysigns:ghs09",
+      "category": "GHS",
+      "code": "GHS09",
+      "texture": "safetysigns:signs/ghs09",
+      "names": { "en_us": "Environment", "ja_jp": "環境" },
+      "keywords": ["environment", "aquatic", "pollutant", "fish", "tree", "水生環境有害性", "環境", "魚", "枯れ木"]
     }
   ]
 }

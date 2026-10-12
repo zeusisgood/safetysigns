@@ -5,23 +5,30 @@
 図柄のテクスチャは `tools/texgen/` のスクリプトで作る（Python 3 + Pillow）。出力の PNG と一覧画像はコミットする。
 
 ```
-python3 tools/texgen/generate.py            # 64×64（既定）
+python3 tools/texgen/generate.py            # 64×64（既定。hires の図柄は 128×128）
 python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 の 2 の累乗）
 ```
 
 | 出力 | 内容 |
 |---|---|
-| `src/main/resources/assets/safetysigns/textures/signs/<名前>.png` | 図柄（64×64、標識の形の外側は透明） |
+| `src/main/resources/assets/safetysigns/textures/signs/<名前>.png` | 図柄（64×64。`hires` の図柄は 128×128。標識の形の外側は透明） |
 | `src/main/resources/assets/safetysigns/textures/blocks/sign_*.png` | 無地・「?」（`--size` の解像度）・裏面・支柱（いつも 16×16） |
-| `doc/textures/preview.png` | 全図柄を拡大して（64 なら 4 倍）、コードと英語の名前を添えた一覧（PR に貼る） |
+| `doc/textures/preview.png` | 全図柄を同じ大きさに拡大して（64 なら 4 倍、128 なら 2 倍）、コードと英語の名前を添えた一覧。基本と違う解像度の図柄は右上に `128x128` の札（PR に貼る） |
 | `doc/textures/parts.png` | 記号の部品だけを白地に黒で並べた一覧（PR に貼る） |
 
 本体の図案は 64 で見て決めている。`--size` を変えても描けるが、32 以下では細い所がつぶれる（コミットするのは 64）。
 
+### 解像度（64 が基本、潰れる図柄だけ 128）
+
+- 図柄は **64×64 が基本**。64×64 で描き直しても細部が潰れて判別しにくい図柄**だけ**、`SIGNS` で `hires(...)` に包んで **128×128**（`--size` の 2 倍）で描く（[SPEC_2026-10-12-8](spec/SPEC_2026-10-12-8.md)）。今は GHS05・ISO 21482。
+- 座標は 0〜64 のまま。128 では 1 単位が 2 ピクセルなので、0.5 単位の細い線・隙間も描ける。地の縁との間隔（1.5 単位）の確かめは同じ。
+- 看板・GUI では解像度が違っても同じ大きさに描かれる（Mod のコードは解像度を問わない）。テクスチャの地図の場所を多く使うので、むやみに増やさない。
+- 一覧画像では、128 の図柄のマスの右上に黄色の札 `128x128` が付く。
+
 | ファイル | 役目 |
 |---|---|
 | `raster.py` | 図形（`Shape`: 点が内側かを答える関数）と、組み合わせ・移動・回転と、マス目に塗る `fill` |
-| `parts.py` | 色、標識の形（三角・円・輪・斜線・四角）、記号の部品 |
+| `parts.py` | 色、標識の形（三角・円・輪・斜線・四角・ひし形）、記号の部品 |
 | `generate.py` | 標識の形ごとの描き方（`warning` など）、図柄の定義 `SIGNS`、一覧画像、無地・「?」・裏面・支柱 |
 
 流れの図は [diagrams/texture-generation.md](diagrams/texture-generation.md)、決定は [ADR 0009](adr/0009-generate-textures-from-parts-with-manual-overrides.md) と [ADR 0011](adr/0011-draw-textures-on-a-resolution-independent-grid.md)。
@@ -41,13 +48,16 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 | 指示の青 | `#005387` |
 | 安全状態の緑 | `#237F52` |
 | 白 | `#FFFFFF` |
+| GHS の枠・ISO 21482 の赤（`HAZARD_RED`） | `#D7191F` |
 
-- 形（`generate.py` の `warning` / `prohibition` / `mandatory` / `safe_condition` / `fire`）。どれも外側に 1 単位の透明な余白を残して 62 単位に収める:
+- 形（`generate.py` の `warning` / `prohibition` / `mandatory` / `safe_condition` / `fire` / `ghs` / `ionizing_radiation`）。どれも外側に 1 単位の透明な余白を残して 62 単位に収める:
   - 警告（W）: 黄の正三角形に黒枠と黒の記号。角は半径 3 で丸め、黒枠は 5（`parts.warning_triangle`）。中の黄色の重心は 41 行目あたり（`parts.TRIANGLE_SYMBOL_Y`）。
   - 禁止（P）: 白い円に黒の記号。その上に赤い輪（太さ 6）と左上→右下の斜線（幅 5.5）を重ねる。
   - 指示（M）: 青い円に白の記号。
   - 安全状態（E）: 緑の四角（角を半径 4 で丸める）に白の記号。
   - 防火（F）: 赤の四角に白の記号。
+  - GHS: 白地のひし形（正方形を 45° 回したもの）に赤 `#D7191F` の枠（4）と黒の記号。角は半径 2 で丸める（`parts.diamond`）。記号はひし形の中の正方形（中心から縦横 12 くらい）に収まるように置き、横棒・骨の端などは角に寄せすぎない。
+  - ISO 21482（`ionizing_radiation`）: 警告と同じ三角形に、黄の代わりに赤 `#D7191F`、黒枠と黒の記号。
 - 記号は、地（黄・白・青・緑・赤）の縁から 1.5 単位以上離す。近すぎるとスクリプトが止まる（`check_margin`。解像度によらず、細かいマス目で確かめる）。止まったら、記号を小さくするか位置をずらす。
 - 形の中心は 32（ピクセルの境目）。左右対称の記号は中心を 32 に置くと、左右のピクセルがちょうど揃う。
 
@@ -65,8 +75,10 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 | 炎・稲妻・しずく・歯車 | `flame` `lightning` `droplet` `gear` | |
 | 波 | `waves`（横に流れる）・`rising_waves`（縦に立ちのぼる） | |
 | 警告の記号 | `exclamation` `trefoil` `explosion` `hot_surface` | W001・W003・W002・W017 |
+| GHS の記号 | `exploding_bomb` `flame_on_bar` `flame_over_circle` `gas_cylinder` `corrosion` `skull_crossbones` `health_hazard` `environment` | GHS01〜GHS09（GHS07 は `exclamation`）。どれも原点の中心で高さ 40（`GHS_HEIGHT`）で書いている |
+| 放射線の波 | `radiation_waves(cx, cy, angles)` | 中心から外へ向かう波線（ISO 21482） |
 
-部品を足すときは、原点を中心にした決まった高さで形を書き、`place` で置く（`hand_shape` と `hand` の組を見る）。形は `raster.py` の基本の図形（円・楕円・四角・角の丸い四角・太線 `capsule`・太さの変わる線 `tapered`・折れ線 `polyline`・多角形・輪・波）を `|`（足す）・`-`（抜く）・`&`（重なり）で組む。
+部品を足すときは、原点を中心にした決まった高さで形を書き、`place` で置く（`hand_shape` と `hand` の組を見る）。輪郭線だけで描く部品（GHS05 の試験管・手）は `raster.outline(形, 太さ)` で線にする（形を `raster.erode` で細らせて抜いたもの。太さは小さい値の前提）。形は `raster.py` の基本の図形（円・楕円・四角・角の丸い四角・太線 `capsule`・太さの変わる線 `tapered`・折れ線 `polyline`・多角形・輪・波）を `|`（足す）・`-`（抜く）・`&`（重なり）で組む。
 重なった部品の境目を見せたいときは `raster.layered(奥, 手前, gap=1.0)`（手前の周りを gap だけ抜く）。
 
 ### 図柄を足す
@@ -75,6 +87,7 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 2. 記号の部品が足りなければ、`tools/texgen/parts.py` に関数を足す（上の「部品」）。
 3. `tools/texgen/generate.py` の `SIGNS` に、`"<名前>": <形>(<部品>(<中心と大きさ>))` を足す。記号を 2 つ以上並べるときは、形の関数に部品を続けて渡す。
 4. `python3 tools/texgen/generate.py` を流して、`doc/textures/preview.png` と `doc/textures/parts.png` を見る。地の縁と記号がくっついていないか（くっつくとスクリプトが止まる）、遠目に何か分かるかを確かめる。
+   - 64×64 で、要素を減らす・大きくするなどして描き直しても判別しにくいときだけ、`"<名前>": hires(<形>(...))` にして 128×128 で描く（上の「解像度」）。
 5. PNG・一覧画像・スクリプトをまとめてコミットする。機能の追加なので版はパッチで上げ、`CHANGELOG.md` に書く。
 
 ### 手で仕上げる
@@ -84,6 +97,6 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 1. 生成した `textures/signs/<名前>.png` を `tools/texgen/manual/<名前>.png` にコピーする。
 2. ドット絵の描けるエディタ（Aseprite・LibreSprite・GIMP の鉛筆ツールなど）で、上の色だけを使って直す。消しゴムで消した所は完全な透明にする。
 3. `generate.py` を流すと、`manual/` にある図柄は生成せず、そのファイルを出力にコピーする（流し直しても手の仕上げは消えない）。一覧画像の名前に `(manual)` が付く。
-4. 2 の累乗の正方形でなければ止まる。解像度が `--size` と違う・色が外れていると警告が出る（出力はされる）。直してから流し直す。
+4. 2 の累乗の正方形でなければ止まる。解像度がその図柄の解像度（`--size`、`hires` の図柄はその 2 倍）と違う・色が外れていると警告が出る（出力はされる）。直してから流し直す。
 
 `manual/` のファイルを消せば、生成に戻る。`SIGNS` にない名前のファイルを置けば、手で描いただけの図柄としても出力される（定義ファイルの項目は別に足す）。

@@ -9,8 +9,12 @@
 図柄のテクスチャは、標識の形の外側を透明にする。看板の板はテクスチャの透明でない所の形に切り抜かれる
 （仕様書 SPEC_2026-10-12-2.md）。
 
+図柄の解像度は --size が基本。64 で細部が潰れる図柄だけ、SIGNS で hires(...) に包んで 2 倍（既定なら 128×128）で描く
+（仕様書 SPEC_2026-10-12-8.md）。設計の座標は同じ 0〜64 なので、2 倍で描くと 1 単位が 2 ピクセルになる。
+
 使い方: python3 tools/texgen/generate.py [--size 64]
-  --size  図柄・無地・「?」の解像度（16 以上 512 以下の 2 の累乗。既定 64）。裏面と支柱はいつも 16×16
+  --size  図柄・無地・「?」の基本の解像度（16 以上 512 以下の 2 の累乗。既定 64）。hires の図柄はその 2 倍（512 まで）。
+          裏面と支柱はいつも 16×16
 出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/{preview,parts}.png
 """
 import argparse
@@ -22,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import parts
 import raster
-from parts import BLACK, BLUE, CLEAR, GREEN, RED, WHITE, YELLOW
+from parts import BLACK, BLUE, CLEAR, GREEN, HAZARD_RED, RED, WHITE, YELLOW
 
 ROOT = Path(__file__).resolve().parents[2]
 TEXTURES = ROOT / "src/main/resources/assets/safetysigns/textures"
@@ -45,6 +49,9 @@ POLE_DARK = (0xBA, 0xBF, 0xC3, 255)
 PREVIEW_BG = (0x40, 0x40, 0x40, 255)
 PREVIEW_TEXT = (0xF0, 0xF0, 0xF0, 255)
 PREVIEW_NOTE = (0xA0, 0xA0, 0xA0, 255)
+# 一覧画像で、基本と違う解像度の図柄に付ける印
+PREVIEW_BADGE = (0xF9, 0xA8, 0x00, 255)
+PREVIEW_BADGE_TEXT = (0x1A, 0x1A, 0x1A, 255)
 
 
 # ---- 標識の形 ----
@@ -121,6 +128,40 @@ def fire(*symbols):
     return {"category": "F", "colors": {RED, WHITE}, "draw": draw}
 
 
+def ghs(*symbols):
+    """GHS 絵表示: 白地のひし形に赤枠と黒の記号（仕様書 SPEC_2026-10-12-7.md）。"""
+    def draw(image):
+        outer, inner = parts.diamond()
+        raster.fill(image, outer, HAZARD_RED)
+        raster.fill(image, inner, WHITE)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, inner)
+        raster.fill(image, symbol, BLACK)
+    return {"category": "GHS", "colors": {WHITE, HAZARD_RED, BLACK}, "draw": draw}
+
+
+def ionizing_radiation(*symbols):
+    """ISO 21482（電離放射線）: 赤の正三角形に黒枠と黒の記号。三角形は警告と同じ形（仕様書 SPEC_2026-10-12-7.md）。"""
+    def draw(image):
+        outer, inner = parts.warning_triangle()
+        raster.fill(image, outer, BLACK)
+        raster.fill(image, inner, HAZARD_RED)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, inner)
+        raster.fill(image, symbol, BLACK)
+    return {"category": "OTHER", "colors": {HAZARD_RED, BLACK}, "draw": draw}
+
+
+def hires(sign, factor=2):
+    """64 で細部が潰れる図柄を、基本の解像度の factor 倍で描く（仕様書 SPEC_2026-10-12-8.md）。一覧画像に印が付く。"""
+    return dict(sign, scale=factor)
+
+
+def sign_size(sign, size):
+    """図柄を描く解像度。基本の解像度 size に図柄ごとの倍率を掛ける（512 まで）。"""
+    return min(512, size * (sign or {}).get("scale", 1))
+
+
 # ---- 図柄の定義 ----
 # キーはテクスチャのファイル名（textures/signs/<キー>.png）。部品の位置と大きさは設計の単位（0〜64、中心 32）。
 # 三角形の記号は、中の黄色の重心（parts.TRIANGLE_SYMBOL_Y）の辺りに置く。
@@ -138,6 +179,20 @@ SIGNS = {
     "m010": mandatory(parts.coverall_person(C, C + 0.5, 48)),
     "p004": prohibition(parts.person(C - 0.5, C, 44, "walking")),
     "p010": prohibition(parts.hand(C + 1, C + 0.5, 42)),
+    "ghs01": ghs(parts.exploding_bomb(C, C, 34)),
+    "ghs02": ghs(parts.flame_on_bar(C, C, 30)),
+    "ghs03": ghs(parts.flame_over_circle(C, C, 30)),
+    "ghs04": ghs(parts.gas_cylinder(C, C, 36)),
+    "ghs05": hires(ghs(parts.corrosion(C, C, 40))),
+    "ghs06": ghs(parts.skull_crossbones(C, C - 2.5, 30)),
+    "ghs07": ghs(parts.exclamation(C, C, 30)),
+    "ghs08": ghs(parts.health_hazard(C, C, 30)),
+    "ghs09": ghs(parts.environment(C, C - 1, 29)),
+    "iso21482": hires(ionizing_radiation(parts.trefoil(C, 28.6, 12.6),
+                                         parts.radiation_waves(C, 28.6, angles=(-28, 0, 28), start=8.2, end=11.4,
+                                                               amplitude=0.7, wavelength=7.6, r=0.75),
+                                         parts.skull_crossbones(21.6, 45.0, 17),
+                                         parts.person(40.6, 45.6, 17.2, "running"))),
 }
 
 
@@ -235,13 +290,13 @@ PREVIEW_CELL = 256
 
 
 def write_sheet(path, entries, cell_bg=None):
-    """一覧画像: 拡大して暗い背景に並べ、下に見出しと説明を書く。entries は (見出し, 説明, 画像)。
+    """一覧画像: 拡大して暗い背景に並べ、下に見出しと説明を書く。entries は (見出し, 説明, 画像, 印)。
 
+    解像度の違う図柄も同じマスの大きさに整数倍で拡大する（64 なら 4 倍、128 なら 2 倍）。
+    印（"128x128" など。None なら付けない）は、基本と違う解像度の図柄の右上に出す。
     cell_bg を渡すと、透明な所をその色で塗る（部品の一覧で、黒い部品を見やすくする）。
     """
-    image_size = entries[0][2].width
-    scale = max(1, PREVIEW_CELL // image_size)
-    cell = image_size * scale
+    cell = max([PREVIEW_CELL] + [entry[2].width for entry in entries])
     gap = 16
     label = 64
     columns = 5
@@ -251,16 +306,18 @@ def write_sheet(path, entries, cell_bg=None):
     # Pillow 内蔵のフォント（環境によって一覧画像が変わらないように、システムのフォントは使わない）
     title_font = ImageFont.load_default(size=18)
     name_font = ImageFont.load_default(size=13)
-    for i, (title, note, image) in enumerate(entries):
+    for i, (title, note, image, badge) in enumerate(entries):
         x = gap + (i % columns) * (cell + gap)
         y = gap + (i // columns) * (cell + label + gap)
-        # 解像度の違う手の仕上げも、同じマスの大きさに整数倍（か整数分の 1）で収める
-        if image.width != image_size:
-            image = image.resize((image_size, image_size), Image.NEAREST)
         background = Image.new("RGBA", image.size, cell_bg or PREVIEW_BG)
         composed = Image.alpha_composite(background, image)
         sheet.paste(composed.resize((cell, cell), Image.NEAREST), (x, y))
         draw.text((x, y + cell + 6), title, font=title_font, fill=PREVIEW_TEXT)
+        if badge:
+            # 基本と違う解像度の印（右上の黄色い札）
+            width = draw.textlength(badge, font=name_font)
+            draw.rectangle([x + cell - width - 12, y, x + cell - 1, y + 20], fill=PREVIEW_BADGE)
+            draw.text((x + cell - width - 6, y + 3), badge, font=name_font, fill=PREVIEW_BADGE_TEXT)
         for j, line in enumerate(wrap(draw, note, name_font, cell)[:2]):
             draw.text((x, y + cell + 28 + j * 16), line, font=name_font, fill=PREVIEW_NOTE)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -273,14 +330,23 @@ def write_parts(size):
     for i, (title, shape) in enumerate(parts.catalog()):
         image = parts.new_canvas(size)
         raster.fill(image, shape, BLACK)
-        entries.append((f"{i + 1:02d}", title, image))
+        entries.append((f"{i + 1:02d}", title, image, None))
     write_sheet(PARTS_PREVIEW, entries, cell_bg=WHITE)
 
 
-# 手で描いただけの図柄（SIGNS にない名前）を確かめる色。名前の先頭の文字で分類を決める
-CATEGORY_COLORS = {"w": {YELLOW, BLACK}, "p": {WHITE, RED, BLACK}, "m": {BLUE, WHITE}, "e": {GREEN, WHITE},
+# 手で描いただけの図柄（SIGNS にない名前）を確かめる色。名前の先頭で分類を決める（長い接頭辞から順に見る）
+CATEGORY_COLORS = {"ghs": {WHITE, HAZARD_RED, BLACK}, "iso21482": {HAZARD_RED, BLACK},
+                   "w": {YELLOW, BLACK}, "p": {WHITE, RED, BLACK}, "m": {BLUE, WHITE}, "e": {GREEN, WHITE},
                    "f": {RED, WHITE}}
-ALL_COLORS = {YELLOW, BLACK, RED, BLUE, GREEN, WHITE}
+ALL_COLORS = {YELLOW, BLACK, RED, BLUE, GREEN, WHITE, HAZARD_RED}
+
+
+def manual_colors(name):
+    """手で描いただけの図柄の、使ってよい色（名前の接頭辞で決める。知らなければ全部の色）。"""
+    for prefix in sorted(CATEGORY_COLORS, key=len, reverse=True):
+        if name.startswith(prefix):
+            return CATEGORY_COLORS[prefix]
+    return ALL_COLORS
 
 
 def parse_size():
@@ -300,12 +366,13 @@ def main():
     manual_only = sorted(path.stem for path in MANUAL.glob("*.png") if path.stem not in SIGNS)
     for name in list(SIGNS) + manual_only:
         sign = SIGNS.get(name)
+        target = sign_size(sign, size)
         if (MANUAL / f"{name}.png").exists():
-            allowed = sign["colors"] if sign else CATEGORY_COLORS.get(name[0], ALL_COLORS)
-            image = load_manual(name, allowed, size)
+            allowed = sign["colors"] if sign else manual_colors(name)
+            image = load_manual(name, allowed, target)
             source = "manual"
         else:
-            image = parts.new_canvas(size)
+            image = parts.new_canvas(target)
             try:
                 sign["draw"](image)
             except ValueError as error:
@@ -316,12 +383,13 @@ def main():
         code, english = names.get(name, (name.upper(), ""))
         if source == "manual":
             english = f"{english} (manual)".strip()
-        entries.append((code, english, image))
-        print(f"{name}: {source}")
+        badge = f"{image.width}x{image.height}" if image.width != size else None
+        entries.append((code, english, image, badge))
+        print(f"{name}: {source} ({image.width}x{image.height})")
 
     for name, image, title in [("blank", blank(size), "Blank"), ("unknown", unknown(size), "Unknown pattern ID")]:
         image.save(TEXTURES / "blocks" / f"sign_{name}.png")
-        entries.append((name, title, image))
+        entries.append((name, title, image, None))
     # 支柱と裏面は図柄ではないので、一覧画像には入れない
     pole().save(TEXTURES / "blocks" / "sign_pole.png")
     back().save(TEXTURES / "blocks" / "sign_back.png")
