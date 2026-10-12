@@ -4,8 +4,11 @@
 いまは仮のテクスチャ（仕様書「9. 作業の順番」の 2）。カテゴリの形と色に、ISO のコードの番号を
 3×5 ドットの数字で描くだけ。本番の図柄（放射線マーク・稲妻・炎など）は 9 の 7 でこのスクリプトを書き直す。
 
+図柄のテクスチャは、標識の形の外側を透明にする。看板の板はテクスチャの透明でない所の形に切り抜かれる
+（仕様書 SPEC_2026-10-12-2.md）。
+
 使い方: python3 tools/texgen/generate.py
-出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png（sign_back.png はこのスクリプトでは作らない）と doc/textures/preview.png
+出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/preview.png
 """
 from pathlib import Path
 
@@ -25,13 +28,17 @@ BLUE = (0x00, 0x53, 0x87, 255)
 GREEN = (0x23, 0x7F, 0x52, 255)
 WHITE = (0xFF, 0xFF, 0xFF, 255)
 CLEAR = (0, 0, 0, 0)
-# 無地の金属板（裏面の sign_back と同じ系統の色）
+# 無地の金属板
 PLATE = (0xE4, 0xE6, 0xE8, 255)
 PLATE_EDGE = (0xA7, 0xAD, 0xB2, 255)
-# ポールの支柱（亜鉛メッキ風。仕様書 2.2）。基調の色と、丸く見せる明るい列・暗い列
-POLE = (0xA7, 0xAD, 0xB2, 255)
-POLE_LIGHT = (0xC4, 0xC9, 0xCD, 255)
-POLE_DARK = (0x86, 0x8D, 0x93, 255)
+# 板の裏面と縁、ポール付きの固定金具（灰色の金属板。仕様書 SPEC_2026-10-12-2.md）
+BACK = (0x8C, 0x91, 0x96, 255)
+# ポールの支柱（仕様書 SPEC_2026-10-12-2.md）。基調の色と、丸く見せる明るい列・暗い列
+POLE = (0xDD, 0xE0, 0xE2, 255)
+POLE_LIGHT = (0xF0, 0xF2, 0xF3, 255)
+POLE_DARK = (0xBA, 0xBF, 0xC3, 255)
+# 一覧画像の背景（切り抜いた形が分かる暗い灰色）
+PREVIEW_BG = (0x40, 0x40, 0x40, 255)
 
 # 3×5 ドットの数字と「?」
 GLYPHS = {
@@ -111,6 +118,11 @@ def blank():
     return image
 
 
+def back():
+    """板の裏面と縁・固定金具（16×16 の無地。描画はどこを取っても同じ色になる前提）。"""
+    return Image.new("RGBA", (16, 16), BACK)
+
+
 def pole():
     """ポールの支柱（16×16。モデルは左端の 4 列を 4 ピクセル角の支柱の各面に貼る）。仮のテクスチャ。"""
     image = Image.new("RGBA", (16, 16), POLE)
@@ -140,19 +152,19 @@ def main():
     for name, image in [("blank", blank()), ("unknown", unknown())]:
         image.save(TEXTURES / "blocks" / f"sign_{name}.png")
         outputs.append((name, image))
-    # 支柱は図柄ではないので、一覧画像には入れない
+    # 支柱と裏面は図柄ではないので、一覧画像には入れない
     pole().save(TEXTURES / "blocks" / "sign_pole.png")
+    back().save(TEXTURES / "blocks" / "sign_back.png")
 
-    # 一覧画像: 8 倍に拡大して、無地の板に重ねて並べる
+    # 一覧画像: 8 倍に拡大して、暗い背景に並べる（透明な所は看板では板がない＝背景が見える）
     scale = 8
     cell = SIZE * scale
     gap = 8
     columns = 5
     rows = (len(outputs) + columns - 1) // columns
-    preview = Image.new("RGBA", (columns * (cell + gap) + gap, rows * (cell + gap) + gap), (0x40, 0x40, 0x40, 255))
-    plate = blank()
+    preview = Image.new("RGBA", (columns * (cell + gap) + gap, rows * (cell + gap) + gap), PREVIEW_BG)
     for i, (_, image) in enumerate(outputs):
-        composed = Image.alpha_composite(plate, image)
+        composed = Image.alpha_composite(Image.new("RGBA", (SIZE, SIZE), PREVIEW_BG), image)
         x = gap + (i % columns) * (cell + gap)
         y = gap + (i // columns) * (cell + gap)
         preview.paste(composed.resize((cell, cell), Image.NEAREST), (x, y))

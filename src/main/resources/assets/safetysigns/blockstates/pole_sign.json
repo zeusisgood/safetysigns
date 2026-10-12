@@ -1,12 +1,16 @@
 {
   "variants": {
-    "facing=north,part=0": { "model": "safetysigns:pole_sign_bottom" },
-    "facing=north,part=1": { "model": "safetysigns:pole_sign_top" },
-    "facing=east,part=0": { "model": "safetysigns:pole_sign_bottom", "y": 90 },
-    "facing=east,part=1": { "model": "safetysigns:pole_sign_top", "y": 90 },
-    "facing=south,part=0": { "model": "safetysigns:pole_sign_bottom", "y": 180 },
-    "facing=south,part=1": { "model": "safetysigns:pole_sign_top", "y": 180 },
-    "facing=west,part=0": { "model": "safetysigns:pole_sign_bottom", "y": 270 },
-    "facing=west,part=1": { "model": "safetysigns:pole_sign_top", "y": 270 }
+    "facing=north,part=0": { "model": "safetysigns:pole_sign_pole" },
+    "facing=north,part=1": { "model": "safetysigns:pole_sign_pole" },
+    "facing=north,part=2": { "model": "safetysigns:pole_sign_top" },
+    "facing=east,part=0": { "model": "safetysigns:pole_sign_pole", "y": 90 },
+    "facing=east,part=1": { "model": "safetysigns:pole_sign_pole", "y": 90 },
+    "facing=east,part=2": { "model": "safetysigns:pole_sign_top", "y": 90 },
+    "facing=south,part=0": { "model": "safetysigns:pole_sign_pole", "y": 180 },
+    "facing=south,part=1": { "model": "safetysigns:pole_sign_pole", "y": 180 },
+    "facing=south,part=2": { "model": "safetysigns:pole_sign_top", "y": 180 },
+    "facing=west,part=0": { "model": "safetysigns:pole_sign_pole", "y": 270 },
+    "facing=west,part=1": { "model": "safetysigns:pole_sign_pole", "y": 270 },
+    "facing=west,part=2": { "model": "safetysigns:pole_sign_top", "y": 270 }
   }
 }

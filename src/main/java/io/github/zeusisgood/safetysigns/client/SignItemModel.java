@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * 看板アイテムのモデル。無地のモデル（item/generated）を包み、NBT の図柄 ID に合わせて
- * 「無地の板 + 図柄」の 2 枚重ねのモデルに差し替える。図柄ごとのモデルは初めて使うときに作って取っておく。
+ * 図柄のテクスチャ 1 枚のモデル（置いた看板と同じく、透明な所は板がない）に差し替える。図柄ごとのモデルは初めて使うときに作って取っておく。
  */
 public class SignItemModel extends BakedModelWrapper<IBakedModel> {
 
@@ -57,7 +57,7 @@ public class SignItemModel extends BakedModelWrapper<IBakedModel> {
         }
 
         private IBakedModel bake(ResourceLocation texture) {
-            IBakedModel layers = new ItemLayerModel(ImmutableList.of(SignTextures.BLANK, texture))
+            IBakedModel layers = new ItemLayerModel(ImmutableList.of(texture))
                     .bake(TRSRTransformation.identity(), DefaultVertexFormats.ITEM, SignTextures::sprite);
             return new WithBlankTransforms(layers, SignItemModel.this.originalModel);
         }

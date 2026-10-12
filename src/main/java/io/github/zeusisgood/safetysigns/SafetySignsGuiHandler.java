@@ -26,7 +26,7 @@ public class SafetySignsGuiHandler implements IGuiHandler {
             IBlockState state = world.getBlockState(pos);
             TileEntity tile = world.getTileEntity(pos);
             if (state.getBlock() instanceof BlockSafetySign && tile instanceof TileEntitySafetySign) {
-                // プレビューは図柄を描く面の縦横比（ポール付きは支柱を除いた上段の 1×1）
+                // プレビューは図柄を描く面の縦横比（ポール付きは支柱を除いた最上段の 1×1）
                 BlockSafetySign block = (BlockSafetySign) state.getBlock();
                 return new GuiSignPicker(pos, ((TileEntitySafetySign) tile).getSignId(), block.getLayout().getWidth(),
                         block.getFaceHeight());

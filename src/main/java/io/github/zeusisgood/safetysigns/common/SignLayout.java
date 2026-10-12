@@ -16,8 +16,8 @@ public final class SignLayout {
 
     public static final SignLayout SINGLE = new SignLayout(1, 1);
     public static final SignLayout WALL_2X2 = new SignLayout(2, 2);
-    /** ポール付き看板（縦 2 マス）。部品 0 が下段の支柱（代表）、部品 1 が上段の看板。 */
-    public static final SignLayout POLE = new SignLayout(1, 2);
+    /** ポール付き看板（縦 3 マス）。部品 0（代表）と 1 が支柱、部品 2 が最上段の看板。 */
+    public static final SignLayout POLE = new SignLayout(1, 3);
 
     // 正面から見た「右」の向き（x, z）。添字は horizontal index。
     // 南を向く看板は北を向いて見るので右は東、西を向く看板は東を向いて見るので右は南、…

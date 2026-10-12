@@ -1,32 +1,47 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "safetysigns:blocks/sign_back",
-    "front": "safetysigns:blocks/sign_blank",
-    "back": "safetysigns:blocks/sign_back",
-    "pole": "safetysigns:blocks/sign_pole"
+    "particle": "safetysigns:blocks/sign_pole",
+    "pole": "safetysigns:blocks/sign_pole",
+    "bracket": "safetysigns:blocks/sign_back"
   },
   "elements": [
     {
-      "from": [0, 0, 5],
-      "to": [16, 16, 6],
+      "__comment": "支柱。板（z = 4〜5、SignRenderer が描く）の裏を通り、上端の少し下（y = 13）で止まる",
+      "from": [6, 0, 6],
+      "to": [10, 13, 10],
       "faces": {
-        "north": { "uv": [0, 0, 16, 16], "texture": "#front" },
-        "south": { "uv": [0, 0, 16, 16], "texture": "#back" },
-        "east": { "uv": [15, 0, 16, 16], "texture": "#back" },
-        "west": { "uv": [0, 0, 1, 16], "texture": "#back" },
-        "up": { "uv": [0, 5, 16, 6], "texture": "#back" },
-        "down": { "uv": [0, 10, 16, 11], "texture": "#back" }
+        "north": { "uv": [0, 3, 4, 16], "texture": "#pole" },
+        "south": { "uv": [0, 3, 4, 16], "texture": "#pole" },
+        "east": { "uv": [0, 3, 4, 16], "texture": "#pole" },
+        "west": { "uv": [0, 3, 4, 16], "texture": "#pole" },
+        "up": { "uv": [0, 0, 4, 4], "texture": "#pole" }
       }
     },
     {
-      "from": [6, 0, 6],
-      "to": [10, 16, 10],
+      "__comment": "下の固定金具。支柱を囲み、前は板の裏（z = 5）に付く",
+      "from": [5, 2, 5],
+      "to": [11, 4, 11],
       "faces": {
-        "south": { "uv": [0, 0, 4, 16], "texture": "#pole" },
-        "east": { "uv": [0, 0, 4, 16], "texture": "#pole" },
-        "west": { "uv": [0, 0, 4, 16], "texture": "#pole" },
-        "up": { "uv": [0, 0, 4, 4], "texture": "#pole" }
+        "north": { "uv": [5, 12, 11, 14], "texture": "#bracket" },
+        "south": { "uv": [5, 12, 11, 14], "texture": "#bracket" },
+        "east": { "uv": [5, 12, 11, 14], "texture": "#bracket" },
+        "west": { "uv": [5, 12, 11, 14], "texture": "#bracket" },
+        "up": { "uv": [5, 5, 11, 11], "texture": "#bracket" },
+        "down": { "uv": [5, 5, 11, 11], "texture": "#bracket" }
+      }
+    },
+    {
+      "__comment": "上の固定金具",
+      "from": [5, 9, 5],
+      "to": [11, 11, 11],
+      "faces": {
+        "north": { "uv": [5, 5, 11, 7], "texture": "#bracket" },
+        "south": { "uv": [5, 5, 11, 7], "texture": "#bracket" },
+        "east": { "uv": [5, 5, 11, 7], "texture": "#bracket" },
+        "west": { "uv": [5, 5, 11, 7], "texture": "#bracket" },
+        "up": { "uv": [5, 5, 11, 11], "texture": "#bracket" },
+        "down": { "uv": [5, 5, 11, 11], "texture": "#bracket" }
       }
     }
   ]
