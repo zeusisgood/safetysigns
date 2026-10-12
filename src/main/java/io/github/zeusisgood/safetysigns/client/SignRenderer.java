@@ -253,7 +253,7 @@ public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign
         buffer.pos(x3, y3, z3).tex(u3, v3).color(shade, shade, shade, 1.0F).endVertex();
     }
 
-    /** ディスプレイリストのキー: テクスチャ・看板のブロック（種類ごとに 1 つなので、同じかどうかで比べる）・切り抜き・裏面。 */
+    /** ディスプレイリスト（2 つ続き）のキー: テクスチャ・看板のブロック（種類ごとに 1 つなので、同じかどうかで比べる）・切り抜き・裏面。光るかは中身を変えないので含めない。 */
     private static final class ShapeKey {
         private final ResourceLocation texture;
         private final BlockSafetySign block;
