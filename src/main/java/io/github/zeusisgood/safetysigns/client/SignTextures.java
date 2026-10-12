@@ -54,7 +54,8 @@ public final class SignTextures {
     @SubscribeEvent
     public static void onTextureStitch(TextureStitchEvent.Pre event) {
         TextureMap map = event.getMap();
-        if (map != Minecraft.getMinecraft().getTextureMapBlocks()) {
+        // ブロックのテクスチャ（textures/ 以下を貼る地図）だけ。起動直後でも確実に見分けられるよう、場所で見る
+        if (!"textures".equals(map.getBasePath())) {
             return;
         }
         SignCatalog loaded = load(Minecraft.getMinecraft().getResourceManager());

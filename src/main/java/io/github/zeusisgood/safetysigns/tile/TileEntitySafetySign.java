@@ -8,6 +8,7 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * 看板の図柄 ID を持つ TileEntity。図柄がなければ「無地」（NBT にキーを書かない）。
@@ -25,6 +26,10 @@ public class TileEntitySafetySign extends TileEntity {
 
     /** 図柄を変えて、保存とクライアントへの同期を予約する（サーバー側で呼ぶ）。null は無地。 */
     public void setSignId(@Nullable String signId) {
+        // 同じ値なら保存も同期もしない（連打で通信を増やさない）
+        if (Objects.equals(this.signId, signId)) {
+            return;
+        }
         this.signId = signId;
         markDirty();
         if (world != null && !world.isRemote) {

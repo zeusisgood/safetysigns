@@ -14,13 +14,13 @@ import net.minecraft.util.EnumFacing;
 import org.lwjgl.opengl.GL11;
 
 /**
- * 看板の前面に図柄を重ねて描く。無地の板（ブロックモデル）の 0.001 ブロック手前に、図柄の四角を 1 枚貼る。
+ * 看板の前面に図柄を重ねて描く。無地の板（ブロックモデル）の 0.003 ブロック手前に、図柄の四角を 1 枚貼る。
  * 無地なら何も描かない（モデルの無地の面がそのまま見える）。
  */
 public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign> {
 
     /** 板の前面の位置（ブロックの中心から北へ。モデルの板は z = 15/16〜1）と、重なりのちらつきを防ぐずらし。 */
-    private static final double FRONT_Z = 15.0 / 16.0 - 0.5 - 0.001;
+    private static final double FRONT_Z = 15.0 / 16.0 - 0.5 - 0.003;
 
     @Override
     public void render(TileEntitySafetySign te, double x, double y, double z, float partialTicks, int destroyStage,

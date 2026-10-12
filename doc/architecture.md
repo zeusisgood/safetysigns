@@ -8,7 +8,7 @@
 - クライアントとサーバーの両方に Mod が必要（`@Mod` の `acceptableRemoteVersions` で同じマイナー同士だけ接続できる）。
 - 看板の図柄は、TileEntity とアイテムの NBT に**図柄 ID の文字列**で持つ（[ADR 0001](adr/0001-store-sign-pattern-as-string-id.md)）。
 - 図柄の一覧（定義ファイル）はクライアントだけが読む。サーバーは ID の文字列を保存・同期し、届いた ID の形と距離を確かめるだけ（[ADR 0002](adr/0002-load-sign-definitions-on-texture-stitch.md)）。
-- 見た目: ブロックモデル（JSON）は無地の板。図柄は TileEntity の描画（`SignRenderer`）が前面の 0.001 ブロック手前に重ねる。アイテムは `SignItemModel` が NBT に合わせて「無地 + 図柄」の 2 枚重ねのモデルに差し替える。
+- 見た目: ブロックモデル（JSON）は無地の板。図柄は TileEntity の描画（`SignRenderer`）が前面の 0.003 ブロック手前に重ねる。アイテムは `SignItemModel` が NBT に合わせて「無地 + 図柄」の 2 枚重ねのモデルに差し替える。
 
 | パッケージ / ファイル | 役割 | 動く場所 |
 |---|---|---|
@@ -88,6 +88,7 @@ sequenceDiagram
 
 - 看板アイテムで右クリックすると、`ItemBlock` が設置し、`BlockWallSign.onBlockPlacedBy` がアイテムの `SignId`（形の正しいものだけ）を TileEntity に写す。向きは置いた人の向きの反対。
 - 看板アイテムを持って看板を右クリックしたときは GUI を開かず、そのまま隣に設置する。
+- 図柄は誰でも変えられる（仕様書 4。ロック機能は後回し）。アドベンチャーモードでも変えられる。弾くのは観戦者と、スポーン保護の内側だけ。
 - 壊したときのアイテムは、まだ無地（図柄の保持は仕様書 9 の 3）。
 
 ## NBT
