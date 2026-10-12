@@ -9,11 +9,12 @@
 図柄のテクスチャは、標識の形の外側を透明にする。看板の板はテクスチャの透明でない所の形に切り抜かれる
 （仕様書 SPEC_2026-10-12-2.md）。
 
-図柄の解像度は --size が基本。64 で細部が潰れる図柄だけ、SIGNS で hires(...) に包んで 2 倍（既定なら 128×128）で描く
-（仕様書 SPEC_2026-10-12-8.md）。設計の座標は同じ 0〜64 なので、2 倍で描くと 1 単位が 2 ピクセルになる。
+内蔵の図柄はすべて 128×128 で描く（--size の既定。仕様書 SPEC_2026-10-12-11.md）。設計の座標は 0〜64 なので、
+128 では 1 単位が 2 ピクセルになる。図柄ごとに解像度を変えたいときは、SIGNS で hires(...) に包むと --size の倍数で描く
+（今は使っていない）。
 
-使い方: python3 tools/texgen/generate.py [--size 64]
-  --size  図柄・無地・「?」の基本の解像度（16 以上 512 以下の 2 の累乗。既定 64）。hires の図柄はその 2 倍（512 まで）。
+使い方: python3 tools/texgen/generate.py [--size 128]
+  --size  図柄・無地・「?」の基本の解像度（16 以上 512 以下の 2 の累乗。既定 128）。hires の図柄はその倍数（512 まで）。
           裏面と支柱はいつも 16×16
 出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/{preview,parts}.png
 """
@@ -34,7 +35,7 @@ DEFINITIONS = ROOT / "src/main/resources/assets/safetysigns/safetysigns/signs.js
 MANUAL = Path(__file__).resolve().parent / "manual"
 PREVIEW = ROOT / "doc/textures/preview.png"
 PARTS_PREVIEW = ROOT / "doc/textures/parts.png"
-DEFAULT_SIZE = 64
+DEFAULT_SIZE = 128
 
 # 無地の金属板
 PLATE = (0xE4, 0xE6, 0xE8, 255)
@@ -49,9 +50,6 @@ POLE_DARK = (0xBA, 0xBF, 0xC3, 255)
 PREVIEW_BG = (0x40, 0x40, 0x40, 255)
 PREVIEW_TEXT = (0xF0, 0xF0, 0xF0, 255)
 PREVIEW_NOTE = (0xA0, 0xA0, 0xA0, 255)
-# 一覧画像で、基本と違う解像度の図柄に付ける印
-PREVIEW_BADGE = (0xF9, 0xA8, 0x00, 255)
-PREVIEW_BADGE_TEXT = (0x1A, 0x1A, 0x1A, 255)
 
 
 # ---- 標識の形 ----
@@ -153,7 +151,7 @@ def ionizing_radiation(*symbols):
 
 
 def hires(sign, factor=2):
-    """64 で細部が潰れる図柄を、基本の解像度の factor 倍で描く（仕様書 SPEC_2026-10-12-8.md）。一覧画像に印が付く。"""
+    """図柄を、基本の解像度（--size）の factor 倍で描く。図柄ごとに解像度を変える仕組み（今の内蔵の図柄では使っていない）。"""
     return dict(sign, scale=factor)
 
 
@@ -174,25 +172,45 @@ SIGNS = {
     "w001": warning(parts.exclamation(C, TY - 2, 29)),
     "w002": warning(parts.explosion(C, TY - 0.5, 23)),
     "w003": warning(parts.trefoil(C, TY - 0.5, 25)),
+    "w004": warning(parts.laser(C + 1.5, 45, 15.5)),
+    "w005": warning(parts.antenna(C, 40, 27)),
+    "w006": warning(parts.magnet(C, 40, 28)),
+    "w009": warning(parts.biohazard(C, 40.5, 25)),
+    "w010": warning(parts.snowflake(C, 41, 23.5)),
     "w012": warning(parts.lightning(C, TY - 1, 27)),
+    "w016": warning(parts.skull_crossbones(C, TY - 0.5, 23.5)),
     "w017": warning(parts.hot_surface(C, TY + 0.5, 23)),
+    "w018": warning(parts.automatic_start(C, 41.5, 24)),
+    "w019": warning(parts.crushing(C, 36, 40)),
+    "w021": warning(parts.flame(C, TY - 0.5, 24)),
+    "w023": warning(parts.corrosive_triangle(C, 40, 40)),
+    "w026": warning(parts.battery(C, 43, 26)),
+    "w029": warning(parts.upright_cylinder(C, 38.5, 30)),
+    "w042": warning(parts.arc_flash(C, 39.5, 27)),
+    "w079": warning(parts.hot_content(C, 41, 25)),
+    "w080": warning(parts.hot_steam(C, 36, 40)),
     "m010": mandatory(parts.coverall_person(C, C + 0.5, 48)),
+    "p001": prohibition(),
+    "p002": prohibition(parts.cigarette(C, C, 40)),
+    "p003": prohibition(parts.burning_match(C, C, 40)),
     "p004": prohibition(parts.person(C - 0.5, C, 44, "walking")),
     "p010": prohibition(parts.hand(C + 1, C + 0.5, 42)),
+    "p011": prohibition(parts.bucket_on_fire(C, C, 40)),
+    "p013": prohibition(parts.mobile_phone(C, C, 40)),
     "ghs01": ghs(parts.exploding_bomb(C, C, 34)),
     "ghs02": ghs(parts.flame_on_bar(C, C, 30)),
     "ghs03": ghs(parts.flame_over_circle(C, C, 30)),
     "ghs04": ghs(parts.gas_cylinder(C, C, 36)),
-    "ghs05": hires(ghs(parts.corrosion(C, C, 40))),
+    "ghs05": ghs(parts.corrosion(C, C, 40)),
     "ghs06": ghs(parts.skull_crossbones(C, C - 2.5, 30)),
     "ghs07": ghs(parts.exclamation(C, C, 30)),
     "ghs08": ghs(parts.health_hazard(C, C, 30)),
     "ghs09": ghs(parts.environment(C, C - 1, 29)),
-    "iso21482": hires(ionizing_radiation(parts.trefoil(C, 28.6, 12.6),
-                                         parts.radiation_waves(C, 28.6, angles=(-28, 0, 28), start=8.2, end=11.4,
-                                                               amplitude=0.7, wavelength=7.6, r=0.75),
-                                         parts.skull_crossbones(21.6, 45.0, 17),
-                                         parts.person(40.6, 45.6, 17.2, "running"))),
+    "iso21482": ionizing_radiation(parts.trefoil(C, 28.6, 12.6),
+                                   parts.radiation_waves(C, 28.6, angles=(-28, 0, 28), start=8.2, end=11.4,
+                                                         amplitude=0.7, wavelength=7.6, r=0.75),
+                                   parts.skull_crossbones(21.6, 45.0, 17),
+                                   parts.person(40.6, 45.6, 17.2, "running")),
 }
 
 
@@ -285,15 +303,14 @@ def wrap(draw, text, font, width):
     return lines + [line] if line else lines
 
 
-# 一覧画像の 1 マスの大きさ（ピクセル）。テクスチャは整数倍で拡大する（解像度 64 なら 4 倍）
+# 一覧画像の 1 マスの大きさ（ピクセル）。テクスチャは整数倍で拡大する（解像度 128 なら 2 倍）
 PREVIEW_CELL = 256
 
 
 def write_sheet(path, entries, cell_bg=None):
-    """一覧画像: 拡大して暗い背景に並べ、下に見出しと説明を書く。entries は (見出し, 説明, 画像, 印)。
+    """一覧画像: 拡大して暗い背景に並べ、下に見出しと説明を書く。entries は (見出し, 説明, 画像)。
 
-    解像度の違う図柄も同じマスの大きさに整数倍で拡大する（64 なら 4 倍、128 なら 2 倍）。
-    印（"128x128" など。None なら付けない）は、基本と違う解像度の図柄の右上に出す。
+    解像度の違う図柄も同じマスの大きさに整数倍で拡大する（128 なら 2 倍、64 なら 4 倍）。
     cell_bg を渡すと、透明な所をその色で塗る（部品の一覧で、黒い部品を見やすくする）。
     """
     cell = max([PREVIEW_CELL] + [entry[2].width for entry in entries])
@@ -306,18 +323,13 @@ def write_sheet(path, entries, cell_bg=None):
     # Pillow 内蔵のフォント（環境によって一覧画像が変わらないように、システムのフォントは使わない）
     title_font = ImageFont.load_default(size=18)
     name_font = ImageFont.load_default(size=13)
-    for i, (title, note, image, badge) in enumerate(entries):
+    for i, (title, note, image) in enumerate(entries):
         x = gap + (i % columns) * (cell + gap)
         y = gap + (i // columns) * (cell + label + gap)
         background = Image.new("RGBA", image.size, cell_bg or PREVIEW_BG)
         composed = Image.alpha_composite(background, image)
         sheet.paste(composed.resize((cell, cell), Image.NEAREST), (x, y))
         draw.text((x, y + cell + 6), title, font=title_font, fill=PREVIEW_TEXT)
-        if badge:
-            # 基本と違う解像度の印（右上の黄色い札）
-            width = draw.textlength(badge, font=name_font)
-            draw.rectangle([x + cell - width - 12, y, x + cell - 1, y + 20], fill=PREVIEW_BADGE)
-            draw.text((x + cell - width - 6, y + 3), badge, font=name_font, fill=PREVIEW_BADGE_TEXT)
         for j, line in enumerate(wrap(draw, note, name_font, cell)[:2]):
             draw.text((x, y + cell + 28 + j * 16), line, font=name_font, fill=PREVIEW_NOTE)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -330,7 +342,7 @@ def write_parts(size):
     for i, (title, shape) in enumerate(parts.catalog()):
         image = parts.new_canvas(size)
         raster.fill(image, shape, BLACK)
-        entries.append((f"{i + 1:02d}", title, image, None))
+        entries.append((f"{i + 1:02d}", title, image))
     write_sheet(PARTS_PREVIEW, entries, cell_bg=WHITE)
 
 
@@ -383,13 +395,12 @@ def main():
         code, english = names.get(name, (name.upper(), ""))
         if source == "manual":
             english = f"{english} (manual)".strip()
-        badge = f"{image.width}x{image.height}" if image.width != size else None
-        entries.append((code, english, image, badge))
+        entries.append((code, english, image))
         print(f"{name}: {source} ({image.width}x{image.height})")
 
     for name, image, title in [("blank", blank(size), "Blank"), ("unknown", unknown(size), "Unknown pattern ID")]:
         image.save(TEXTURES / "blocks" / f"sign_{name}.png")
-        entries.append((name, title, image, None))
+        entries.append((name, title, image))
     # 支柱と裏面は図柄ではないので、一覧画像には入れない
     pole().save(TEXTURES / "blocks" / "sign_pole.png")
     back().save(TEXTURES / "blocks" / "sign_back.png")

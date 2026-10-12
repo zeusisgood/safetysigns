@@ -65,11 +65,31 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 | W001 | Warning | General warning sign |
 | W002 | Warning | Explosive material |
 | W003 | Warning | Radioactive material or ionizing radiation |
+| W004 | Warning | Laser beam |
+| W005 | Warning | Non-ionizing radiation |
+| W006 | Warning | Magnetic field |
+| W009 | Warning | Biological hazard |
+| W010 | Warning | Low temperature/freezing conditions |
 | W012 | Warning | Electricity |
+| W016 | Warning | Toxic material |
 | W017 | Warning | Hot surface |
+| W018 | Warning | Automatic start-up |
+| W019 | Warning | Crushing |
+| W021 | Warning | Flammable material |
+| W023 | Warning | Corrosive substance |
+| W026 | Warning | Battery charging |
+| W029 | Warning | Pressurized cylinder |
+| W042 | Warning | Arc flash |
+| W079 | Warning | Hot content |
+| W080 | Warning | Hot steam |
 | M010 | Mandatory action | Wear protective clothing |
+| P001 | Prohibition | General prohibition sign |
+| P002 | Prohibition | No smoking |
+| P003 | Prohibition | No open flame; Fire, open ignition source and smoking prohibited |
 | P004 | Prohibition | No thoroughfare |
 | P010 | Prohibition | Do not touch |
+| P011 | Prohibition | Do not extinguish with water |
+| P013 | Prohibition | No activated mobile phones |
 | GHS01 | GHS | Exploding bomb |
 | GHS02 | GHS | Flame |
 | GHS03 | GHS | Flame over circle |
