@@ -154,8 +154,7 @@ def ionizing_radiation(*symbols):
 
 def hires(sign, factor=2):
     """64 で細部が潰れる図柄を、基本の解像度の factor 倍で描く（仕様書 SPEC_2026-10-12-8.md）。一覧画像に印が付く。"""
-    sign["scale"] = factor
-    return sign
+    return dict(sign, scale=factor)
 
 
 def sign_size(sign, size):
