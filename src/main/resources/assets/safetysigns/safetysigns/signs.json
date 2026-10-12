@@ -174,7 +174,7 @@
       "code": "P001",
       "texture": "safetysigns:signs/p001",
       "names": { "en_us": "General prohibition sign", "ja_jp": "一般禁止" },
-      "keywords": ["prohibition", "prohibited", "forbidden", "no", "禁止", "一般禁止", "してはいけない"]
+      "keywords": ["prohibition", "prohibited", "forbidden", "禁止", "一般禁止", "してはいけない"]
     },
     {
       "id": "safetysigns:p002",

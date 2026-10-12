@@ -33,7 +33,7 @@ Put a radiation sign around your reactor, an electricity sign on your switchboar
 - Right-click a placed sign to pick a pictogram, with category tabs and search (English and Japanese)
 - Per-sign settings: **cutout** (plate shaped like the pictogram, or square), **back** (plain silver or the same pictogram), **night glow** (pictogram drawn at full brightness)
 - Sneak + right-click with a sign item to copy a sign's look; broken signs keep their pictogram
-- **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 64x64)
+- **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 128x128)
 
 ### Recipes (shapeless)
 
@@ -70,7 +70,7 @@ ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・
 - 置いた看板を右クリックして図柄を選ぶ（分類のタブと、日英の検索）
 - 看板ごとの設定: **切り抜き**（図柄の形の板 / 四角い板）、**裏面**（銀 / 同じ図柄）、**夜間に光る**（図柄を明るさ最大で描く）
 - 看板アイテムを持ってスニーク + 右クリックで見た目を写す。壊しても図柄は残る
-- **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。64×64 など）
+- **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。128×128 など）
 
 ### レシピ（不定形）
 
