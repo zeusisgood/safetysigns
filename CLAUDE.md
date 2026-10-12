@@ -24,7 +24,7 @@ ISO 7010 の安全標識をモチーフにした、装飾用の警告看板を�
 
 - **JDK 8**、ForgeGradle 3 + Gradle 4.9（Gradle 5 以降の構文は使えない。依存は `compile` / `testCompile`）。構成は `zeusisgood/weakspot` と同じにする。
 - ビルド + テスト: `./gradlew build` → `build/libs/safetysigns-1.12.2-<version>.jar`（reobf 済み）。テストのみ: `./gradlew test`。
-- テクスチャ生成: `python3 tools/texgen/generate.py`（Pillow。解像度は `--size`、既定 64）。生成した PNG と `doc/textures/preview.png`・`doc/textures/parts.png` はコミットする。ビルドに Python を持ち込まない。
+- テクスチャ生成: `python3 tools/texgen/generate.py`（Pillow。解像度は `--size`、既定 128。内蔵の図柄はすべて 128×128）。生成した PNG と `doc/textures/preview.png`・`doc/textures/parts.png` はコミットする。ビルドに Python を持ち込まない。
 - 描画・GUI の見た目・設置の手触りは Claude が確かめられない。jar をユーザーのホスト側 Minecraft と testserver（マルチ）で試してもらう。
 
 ## バージョン

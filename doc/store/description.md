@@ -24,14 +24,16 @@ Put a radiation sign around your reactor, an electricity sign on your switchboar
 ### Features
 
 - Three sign types: **wall 1x1**, **wall 2x2** and **pole** (3 blocks tall)
-- 18 pictograms
-  - ISO 7010: general warning, explosive, radioactive, electricity, hot surface, wear protective clothing, no thoroughfare, do not touch
+- 38 pictograms
+  - ISO 7010 warnings: general warning, explosive, radioactive, laser beam, non-ionizing radiation, magnetic field, biological hazard, low temperature, electricity, toxic, hot surface, automatic start-up, crushing, flammable, corrosive, battery charging, pressurized cylinder, arc flash, hot content, hot steam
+  - ISO 7010 prohibitions: general prohibition, no smoking, no open flame, no thoroughfare, do not touch, do not extinguish with water, no activated mobile phones
+  - ISO 7010 mandatory: wear protective clothing
   - GHS: all 9 pictograms (exploding bomb, flame, flame over circle, gas cylinder, corrosion, skull and crossbones, exclamation mark, health hazard, environment)
   - ISO 21482: ionizing radiation (large sources)
 - Right-click a placed sign to pick a pictogram, with category tabs and search (English and Japanese)
 - Per-sign settings: **cutout** (plate shaped like the pictogram, or square), **back** (plain silver or the same pictogram), **night glow** (pictogram drawn at full brightness)
 - Sneak + right-click with a sign item to copy a sign's look; broken signs keep their pictogram
-- **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 64x64)
+- **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 128x128)
 
 ### Recipes (shapeless)
 
@@ -59,14 +61,16 @@ ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・
 ### できること
 
 - 看板は 3 種類: **壁掛け 1×1**・**壁掛け 2×2**・**ポール付き**（縦 3 ブロック）
-- 図柄は 18 種
-  - ISO 7010: 一般警告・爆発物・放射性物質・感電注意・高温注意・防護服着用・通行禁止・触るな
+- 図柄は 38 種
+  - ISO 7010 の警告: 一般警告・爆発物・放射性物質・レーザー光線・非電離放射線・磁界・生物学的危険・低温・感電・毒物・高温・自動起動・挟まれ・可燃性物質・腐食性物質・電池充電・高圧ガス容器・アークフラッシュ・高温の内容物・高温の蒸気
+  - ISO 7010 の禁止: 一般禁止・禁煙・火気厳禁・通行禁止・触るな・水による消火禁止・携帯電話の使用禁止
+  - ISO 7010 の指示: 防護服着用
   - GHS: 9 種すべて（爆弾の爆発・炎・円上の炎・ガスボンベ・腐食性・どくろ・感嘆符・健康有害性・環境）
   - ISO 21482: 電離放射線（大量の線源）
 - 置いた看板を右クリックして図柄を選ぶ（分類のタブと、日英の検索）
 - 看板ごとの設定: **切り抜き**（図柄の形の板 / 四角い板）、**裏面**（銀 / 同じ図柄）、**夜間に光る**（図柄を明るさ最大で描く）
 - 看板アイテムを持ってスニーク + 右クリックで見た目を写す。壊しても図柄は残る
-- **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。64×64 など）
+- **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。128×128 など）
 
 ### レシピ（不定形）
 

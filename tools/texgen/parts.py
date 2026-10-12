@@ -511,6 +511,35 @@ def gas_cylinder(cx, cy, size):
 CORROSION_LINE = 0.6
 
 
+def test_tube(bottom, mouth, line=None):
+    """試験管: 底 bottom は丸く、口 mouth は平らに切って縁を少し広げる。line を渡すと輪郭線だけ（太さ line）、
+    渡さなければ塗りつぶし。"""
+    (x0, y0), (x1, y1) = bottom, mouth
+    dx, dy = x1 - x0, y1 - y0
+    length = math.hypot(dx, dy)
+    ux, uy = dx / length, dy / length
+    body = capsule(bottom, mouth, 1.9) - Shape(lambda x, y: (x - x1) * ux + (y - y1) * uy > 0)
+    lip = capsule((x1 - uy * 2.3, y1 + ux * 2.3), (x1 + uy * 2.3, y1 - ux * 2.3), (line or 1.2) / 2)
+    return (outline(body, line) if line else body) | lip
+
+
+def corroded_hand(line=CORROSION_LINE):
+    """液がかかって欠けた手（GHS05 の右下と同じ位置・大きさ。x 3.6〜18.6、y 1〜6.9）。
+
+    手のひらを下にした手で、指は左へ向く。甲・指・親指をそれぞれ輪郭線で描いて重ね（指の境目が見える）、
+    液のかかった甲の上（x 13 の辺り）が欠けている。
+    """
+    bite = circle(13.0, 1.6, 2.2) | circle(15.2, 2.0, 1.0)
+    back = rounded_rect(8.4, 1.6, 18.6, 6.6, 2.0) - bite
+    fingers = [capsule((9.4, 2.5), (4.4, 2.3), 0.9), capsule((9.4, 4.0), (3.6, 4.0), 0.9),
+               capsule((9.4, 5.4), (4.2, 5.6), 0.85), capsule((9.4, 6.4), (5.6, 6.9), 0.75)]
+    thumb = capsule((10.6, 2.2), (6.6, 1.0), 0.8)
+    hand_ = outline(back, line)
+    for part in fingers + [thumb]:
+        hand_ = hand_ | (outline(part, line) - back)
+    return hand_
+
+
 def corrosion_shape():
     """腐食性物質（原点の中心で高さ 40。128×128 で描く前提の細かさ）。
 
@@ -523,14 +552,7 @@ def corrosion_shape():
     line = CORROSION_LINE
 
     def tube(bottom, mouth):
-        # 試験管: 底は丸く、口は平らに切って縁を少し広げる。輪郭線だけ
-        (x0, y0), (x1, y1) = bottom, mouth
-        dx, dy = x1 - x0, y1 - y0
-        length = math.hypot(dx, dy)
-        ux, uy = dx / length, dy / length
-        body = capsule(bottom, mouth, 1.9) - Shape(lambda x, y: (x - x1) * ux + (y - y1) * uy > 0)
-        lip = capsule((x1 - uy * 2.3, y1 + ux * 2.3), (x1 + uy * 2.3, y1 - ux * 2.3), line / 2)
-        return outline(body, line) | lip
+        return test_tube(bottom, mouth, line)
 
     def smoke(x, bottom, top):
         # 縦に立ちのぼる細い波線
@@ -547,17 +569,7 @@ def corrosion_shape():
     # 左: 横長の平たい板（塗りつぶし）。液のかかった上面が欠けている
     bite_left = circle(-13.0, 2.2, 2.2) | circle(-10.8, 2.5, 1.0) | circle(-15.2, 2.6, 1.0)
     plate = rect(-18.0, 2.4, -3.6, 5.6) - bite_left
-    # 右: 手のひらを下にした手（指は中央へ向く）。甲・指・親指をそれぞれ輪郭線で描いて重ね（指の境目が見える）、
-    # 液のかかった甲の上が欠けている
-    bite_right = circle(13.0, 1.6, 2.2) | circle(15.2, 2.0, 1.0)
-    back = rounded_rect(8.4, 1.6, 18.6, 6.6, 2.0) - bite_right
-    fingers = [capsule((9.4, 2.5), (4.4, 2.3), 0.9), capsule((9.4, 4.0), (3.6, 4.0), 0.9),
-               capsule((9.4, 5.4), (4.2, 5.6), 0.85), capsule((9.4, 6.4), (5.6, 6.9), 0.75)]
-    thumb = capsule((10.6, 2.2), (6.6, 1.0), 0.8)
-    hand_ = outline(back, line)
-    for part in fingers + [thumb]:
-        hand_ = hand_ | (outline(part, line) - back)
-    return side(-1) | side(1) | plate | hand_
+    return side(-1) | side(1) | plate | corroded_hand(line)
 
 
 def corrosion(cx, cy, size):
@@ -613,6 +625,310 @@ def radiation_waves(cx, cy, angles=(-32, 0, 32), start=7.0, end=14.0, amplitude=
     return union(*(wave.rotate(angle, 0, 0).shift(cx, cy) for angle in angles))
 
 
+
+# ---- 記号: ISO 7010 の警告・禁止（優先度 A の前半） ----
+# どれも原点を中心にした部品ごとの決まった高さで書き、place で置く。
+
+LASER_HEIGHT = 26
+
+
+def laser_shape():
+    """レーザー光線（原点の中心で高さ 26）。左の光の点（中心の円と、長短交互の 12 本の光線）から、右へ長い光線が伸びる。"""
+    bx = -13.0
+    rays = []
+    for i in range(12):
+        a = math.radians(i * 30 + 15)
+        length = 13.0 if i % 2 == 0 else 9.4
+        dx, dy = math.sin(a), -math.cos(a)
+        rays.append(tapered((bx + dx * 5.2, dy * 5.2), (bx + dx * length, dy * length), 1.5, 1.0))
+    beam = rect(bx, -1.8, 25.0, 1.8)
+    return circle(bx, 0.0, 4.2) | union(*rays) | beam
+
+
+def laser(cx, cy, size):
+    """レーザー光線（W004）。size は光の点の高さ。光線は右へ size の 1.5 倍ほど伸びる。"""
+    return place(laser_shape(), LASER_HEIGHT, cx, cy, size)
+
+
+SYMBOL_HEIGHT = 40
+
+
+def antenna_shape():
+    """非電離放射線（原点の中心で高さ 40）。アンテナの塔と、先端の点から左右へ広がる電波の弧 2 本ずつ。"""
+    tip = (0.0, -6.0)
+    dot = circle(*tip, 2.6)
+    waves = union(*(arc_band(*tip, outer, outer - 2.0, start, end)
+                    for outer in (7.6, 13.0) for start, end in ((52, 128), (232, 308))))
+    mast = tapered(tip, (0.0, 17.0), 1.0, 1.8)
+    legs = union(capsule((0.0, 8.0), (-7.0, 18.0), 1.4), capsule((0.0, 8.0), (7.0, 18.0), 1.4),
+                 capsule((-3.6, 13.0), (3.6, 13.0), 1.0))
+    ground = rect(-10.0, 17.6, 10.0, 20.0)
+    return dot | waves | mast | legs | ground
+
+
+def antenna(cx, cy, size):
+    """非電離放射線（W005）。"""
+    return place(antenna_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def magnet_shape():
+    """磁界（原点の中心で高さ 40。128×128 で描く前提の細かさ）。
+
+    上に、開いた側を下に向けた U 字の磁石（極の先を白い線で区切る）。下に、両極の間を下へふくらんでつなぐ磁力線を
+    入れ子で 3 本。外の線ほど極の外寄りから出て、大きくふくらむ。磁力線は極から少し離して、磁石と見分けられるようにする。
+    """
+    top = -12.0
+    leg_bottom = -1.0
+    body = (arc_band(0.0, top, 11.4, 5.4, 270, 90)
+            | rect(-11.4, top, -5.4, leg_bottom) | rect(5.4, top, 11.4, leg_bottom))
+    poles = rect(-12.0, -6.0, 12.0, -5.0)
+    start = leg_bottom + 2.0
+    lines = union(*(_half_ellipse_line(0.0, start, rx, ry, 0.85)
+                    for rx, ry in ((6.6, 4.4), (9.6, 10.0), (13.4, 16.0))))
+    return (body - poles) | (lines - rect(-20.0, -20.0, 20.0, start))
+
+
+def _half_ellipse_line(cx, cy, rx, ry, r):
+    """下半分の楕円の線（中心 (cx, cy)、横の半径 rx・縦の半径 ry、太さ 2r）。"""
+    points = []
+    for i in range(33):
+        a = math.pi * i / 32
+        points.append((cx + rx * math.cos(a), cy + ry * math.sin(a)))
+    return polyline(points, r)
+
+
+def magnet(cx, cy, size):
+    """磁界（W006）。"""
+    return place(magnet_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+BIOHAZARD_HEIGHT = 46
+
+
+def biohazard_shape():
+    """生物災害（原点の中心で高さ 46）。上・左下・右下の 3 つの三日月と、中心の穴、三日月の口を横切る輪。
+
+    三日月は大きな円（半径 15）から、外へずらした小さな円（半径 10.5）を抜いた形。輪は三日月の口の中にだけ見せ、
+    三日月との間を細く抜く。
+    """
+    crescents = []
+    mouths = []
+    for angle in (0, 120, 240):
+        a = math.radians(angle)
+        dx, dy = math.sin(a), -math.cos(a)
+        mouth = circle(dx * 15.0, dy * 15.0, 10.5)
+        crescents.append(circle(dx * 11.0, dy * 11.0, 15.0) - mouth)
+        mouths.append(mouth)
+    body = union(*crescents) - circle(0.0, 0.0, 3.2)
+    ring_part = annulus(0.0, 0.0, 17.4, 14.8) & union(*mouths)
+    # 上下の真ん中が原点に来るようにずらす（上の端は -26、下の端は約 20.5）
+    return (body | (ring_part - dilate(body, 1.1))).shift(0.0, 2.75)
+
+
+def biohazard(cx, cy, size):
+    """生物災害（W009）。"""
+    return place(biohazard_shape(), BIOHAZARD_HEIGHT, cx, cy, size)
+
+
+def snowflake(cx, cy, size):
+    """雪の結晶（低温）。6 本の腕と、腕ごとに 2 本ずつの枝。size は直径。"""
+    s = size / 40
+    arms = []
+    for i in range(6):
+        a = math.radians(i * 60)
+        dx, dy = math.sin(a), -math.cos(a)
+        arms.append(capsule((0.0, 0.0), (dx * 19.0, dy * 19.0), 1.7))
+        for side in (-1, 1):
+            b = a + side * math.radians(48)
+            base = (dx * 10.0, dy * 10.0)
+            arms.append(capsule(base, (base[0] + math.sin(b) * 6.6, base[1] - math.cos(b) * 6.6), 1.5))
+    return union(*arms).scale(s).shift(cx, cy)
+
+
+def automatic_start_shape():
+    """自動起動（原点の中心で高さ 40）。歯車と、その周りを時計回りに回る矢印（上で切れた輪の先に矢じり）。"""
+    ring_shape = arc_band(0.0, 0.0, 19.0, 15.4, 30, 320)
+    # 矢じりは輪の終わり（左上）で、時計回りの向き（上へ）を指す: 輪の外から内まで広い三角形
+    end, tip_angle = math.radians(320), math.radians(346)
+    tip = (math.sin(tip_angle) * 17.2, -math.cos(tip_angle) * 17.2)
+    head = polygon([tip, (math.sin(end) * 23.0, -math.cos(end) * 23.0), (math.sin(end) * 11.4, -math.cos(end) * 11.4)])
+    return ring_shape | head | gear(0.0, 0.0, 22.0, teeth=8, hole=0.34)
+
+
+def automatic_start(cx, cy, size):
+    """自動起動（W018）。"""
+    return place(automatic_start_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def crushing_shape():
+    """挟まれ（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま）。上から下りる押し板と下向きの矢印、
+    その下でかがむ人、床。押し板は人の背のすぐ上に置く。"""
+    plate = rect(-6.6, -9.4, 6.6, -6.4)
+    push = arrow(0.0, -14.2, 8.0, angle=90, width=2.4, head_length=3.8, head_width=7.6)
+    floor = rect(-16.0, 15.6, 16.0, 17.6)
+    worker = person(-2.0, 1.8, 26.0, "crouching")
+    return plate | push | floor | worker
+
+
+def crushing(cx, cy, size):
+    """挟まれ（W019）。"""
+    return place(crushing_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def corrosive_triangle_shape():
+    """腐食性物質の警告（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま。128×128 で描く前提の細かさ）。
+
+    三角形に合わせて上下に積む: 上の中央に、底を寄せて「ハ」の字に傾けた試験管 2 本（塗りつぶし）、
+    口から落ちるしずく、下の左に上面の欠けた板、下の右に甲の欠けた手（GHS05 と同じ手）。
+    """
+    tubes = test_tube((-2.6, -12.6), (-8.0, -4.0)) | test_tube((2.6, -12.6), (8.0, -4.0))
+    drops = droplet(-10.0, 0.6, 4.0) | droplet(10.0, 0.6, 4.0)
+    bite = circle(-10.0, 4.6, 2.4) | circle(-7.6, 5.0, 1.1) | circle(-12.4, 5.0, 1.1)
+    plate = rect(-17.0, 4.8, -3.6, 9.4) - bite
+    hand_ = corroded_hand().shift(-3.0, 3.6)
+    return tubes | drops | plate | hand_
+
+
+def corrosive_triangle(cx, cy, size):
+    """腐食性物質の警告（W023）。"""
+    return place(corrosive_triangle_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def battery_shape():
+    """電池の充電（原点の中心で高さ 40）。横長の電池（上に端子 2 つ）の胴に、白く抜いた稲妻。"""
+    body = rounded_rect(-17.0, -10.0, 17.0, 14.0, 2.4)
+    terminals = rect(-13.0, -14.0, -6.6, -9.0) | rect(6.6, -14.0, 13.0, -9.0)
+    return (body - lightning(0.0, 2.0, 20.0)) | terminals
+
+
+def battery(cx, cy, size):
+    """電池の充電（W026）。"""
+    return place(battery_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def upright_cylinder_shape():
+    """高圧ガス容器（原点の中心で高さ 40）。立てたボンベ: 丸い肩の胴（左に白い光沢の筋、肩の下に白い帯）、首・弁・ハンドル。"""
+    body = rounded_rect(-7.4, -10.0, 7.4, 20.0, 5.0) | rect(-7.4, 0.0, 7.4, 20.0)
+    shine = rect(-4.8, -2.4, -3.4, 16.4)
+    collar = rect(-7.4, -4.6, 7.4, -3.4)
+    neck = rect(-2.4, -14.6, 2.4, -9.0)
+    valve = rounded_rect(-3.6, -17.4, 3.6, -13.6, 0.8)
+    handle = rect(-6.4, -20.0, 6.4, -18.4) | rect(-0.9, -19.0, 0.9, -17.0)
+    return (body - shine - collar) | neck | valve | handle
+
+
+def upright_cylinder(cx, cy, size):
+    """高圧ガス容器（W029）。GHS04 と違い、立てて描く。"""
+    return place(upright_cylinder_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def arc_flash_shape():
+    """アークフラッシュ（原点の中心で高さ 40）。左右から向き合う 2 本の電極、その間を走るぎざぎざの放電、上へ広がる閃光。"""
+    electrodes = (rect(-20.0, 7.0, -9.0, 12.4) | polygon([(-9.0, 7.0), (-5.6, 9.7), (-9.0, 12.4)])
+                  | rect(9.0, 7.0, 20.0, 12.4) | polygon([(9.0, 7.0), (5.6, 9.7), (9.0, 12.4)]))
+    spark = polyline([(-5.6, 9.7), (-2.6, 5.4), (-0.6, 12.8), (1.8, 5.2), (3.4, 11.4), (5.6, 9.7)], 1.0)
+    rays = []
+    for angle in (-50, -25, 0, 25, 50):
+        a = math.radians(angle)
+        dx, dy = math.sin(a), -math.cos(a)
+        rays.append(tapered((dx * 7.0, 6.0 + dy * 7.0), (dx * 18.0, 6.0 + dy * 18.0), 0.9, 2.2))
+    return electrodes | spark | union(*rays)
+
+
+def arc_flash(cx, cy, size):
+    """アークフラッシュ（W042）。"""
+    return place(arc_flash_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def hot_content_shape():
+    """高温の内容物（原点の中心で高さ 40）。両側に取っ手の付いた鍋（上の縁は空け、中に黒い内容物）と、そこから立ちのぼる 3 本の波線。"""
+    outer = polygon([(-13.0, 0.0), (13.0, 0.0), (11.0, 20.0), (-11.0, 20.0)])
+    inner = polygon([(-10.4, -1.0), (10.4, -1.0), (8.6, 17.4), (-8.6, 17.4)])
+    pot = outer - inner
+    content = inner & rect(-20.0, 5.0, 20.0, 20.0)
+    handles = rect(-17.0, 2.4, -12.0, 5.0) | rect(12.0, 2.4, 17.0, 5.0)
+    steam = rising_waves(0.0, -2.6, 17.0, spacing=7.0, amplitude=1.8, wavelength=10.0, r=1.5)
+    return pot | content | handles | steam
+
+
+def hot_content(cx, cy, size):
+    """高温の内容物（W079）。"""
+    return place(hot_content_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def hot_steam_shape():
+    """高温の蒸気（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま）。左から来る配管とフランジ、
+    その口から右へ噴き出して広がる蒸気の雲（輪郭線）。"""
+    pipe = rect(-16.0, 8.6, -5.0, 13.6) | rect(-6.6, 6.2, -4.0, 16.0)
+    cloud = union(circle(0.2, 11.0, 3.4), circle(5.6, 8.0, 4.4), circle(6.4, 14.0, 3.2), circle(11.2, 11.4, 3.8),
+                  circle(10.4, 5.8, 2.8))
+    return pipe | outline(cloud, 1.5)
+
+
+def hot_steam(cx, cy, size):
+    """高温の蒸気（W080）。"""
+    return place(hot_steam_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def cigarette_shape():
+    """火のついたたばこ（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま）。横に寝かせたたばこ
+    （左にフィルターの境目、右の先に灰）と、先から立ちのぼる煙 2 本。"""
+    body = rect(-19.0, 6.0, 10.6, 11.6)
+    filter_line = rect(-11.0, 6.0, -9.8, 11.6)
+    ash = rect(11.8, 6.0, 14.6, 11.6)
+    smoke = union(sine_band(3.6, -16.0, 13.0, 1.5, 10.0, 1.2, vertical=True),
+                  sine_band(3.6, -11.0, 7.6, 1.5, 10.0, 1.2, vertical=True))
+    return (body - filter_line) | ash | smoke
+
+
+def cigarette(cx, cy, size):
+    """火のついたたばこ（P002）。"""
+    return place(cigarette_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def burning_match_shape():
+    """火のついたマッチ（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま）。立てたマッチの軸と頭、その上の炎。"""
+    stick = rect(-1.5, 1.0, 1.5, 20.0)
+    match_head = ellipse(0.0, 0.4, 2.6, 3.4)
+    fire = place(flame_shape(), FLAME_HEIGHT, 0.0, -10.4, 19.0)
+    return layered(stick | match_head, fire, gap=1.0)
+
+
+def burning_match(cx, cy, size):
+    """火のついたマッチ（P003）。"""
+    return place(burning_match_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def bucket_on_fire_shape():
+    """水で消火するな（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま）。右上で傾けたバケツ（底の側に
+    細い取っ手）から、左下の炎へ水のしずくが 2 つ落ちる。"""
+    body = polygon([(-6.4, -5.6), (6.4, -5.6), (4.6, 6.4), (-4.6, 6.4)])
+    handle = arc_band(0.0, -1.0, 9.2, 8.0, 90, 270) - rect(-10.0, -10.0, 10.0, -1.0)
+    bucket = (body | handle).rotate(-125, 0.0, 0.0).shift(9.6, -9.6)
+    drops = droplet(5.0, -1.4, 8.0) | droplet(-5.2, 1.8, 7.0)
+    fire = place(flame_shape(), FLAME_HEIGHT, -10.0, 12.6, 16.0)
+    return bucket | drops | fire
+
+
+def bucket_on_fire(cx, cy, size):
+    """水で消火するな（P011）。"""
+    return place(bucket_on_fire_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def mobile_phone_shape():
+    """携帯電話（原点の中心で高さ 40。高さ 40 で置くと設計の単位のまま）。縦長の電話機（白い画面とボタン）と、
+    右上へ広がる電波の弧 2 本。"""
+    body = rounded_rect(-10.0, -14.0, 3.0, 16.0, 2.2)
+    screen = rect(-7.6, -11.0, 0.6, -2.6)
+    keys = union(*(rect(x, y, x + 1.8, y + 1.5) for x in (-7.6, -4.4, -1.2) for y in (0.4, 3.8, 7.2, 10.6)))
+    waves = union(*(arc_band(4.0, -9.0, outer, outer - 1.8, 25, 95) for outer in (6.6, 11.0)))
+    return (body - screen - keys) | waves
+
+
+def mobile_phone(cx, cy, size):
+    """携帯電話（P013）。"""
+    return place(mobile_phone_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
 # 部品の一覧画像（doc/textures/parts.png）に並べる部品: (見出し, 図形)。設計の座標の中心に高さ 44 前後で置く
 def catalog():
     c = CENTER
@@ -650,4 +966,21 @@ def catalog():
         ("health hazard", health_hazard(c, c, 44)),
         ("environment", environment(c, c, 44)),
         ("radiation waves", trefoil(c, c - 10, 16) | radiation_waves(c, c - 10, start=11, end=25, amplitude=1.6, wavelength=11.0, r=1.4)),
+        ("laser", laser(c - 4, c, 26)),
+        ("antenna", antenna(c, c, 44)),
+        ("magnet", magnet(c, c, 44)),
+        ("biohazard", biohazard(c, c, 44)),
+        ("snowflake", snowflake(c, c, 44)),
+        ("automatic start-up", automatic_start(c, c, 44)),
+        ("crushing", crushing(c, c, 44)),
+        ("corrosive (triangle)", corrosive_triangle(c, c, 44)),
+        ("battery", battery(c, c, 44)),
+        ("upright cylinder", upright_cylinder(c, c, 44)),
+        ("arc flash", arc_flash(c, c, 44)),
+        ("hot content", hot_content(c, c, 44)),
+        ("hot steam", hot_steam(c, c, 44)),
+        ("cigarette", cigarette(c, c, 44)),
+        ("burning match", burning_match(c, c, 44)),
+        ("bucket on fire", bucket_on_fire(c, c, 44)),
+        ("mobile phone", mobile_phone(c, c, 44)),
     ]
