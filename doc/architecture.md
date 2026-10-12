@@ -36,7 +36,7 @@ flowchart LR
         TE["TileEntitySafetySign<br/>NBT: SignId"]
         Msg["MessageSetSign"]
         Common["common/<br/>SignIds・SignCatalog"]
-        Recipe["RecipeClearSign<br/>無地に戻す"]
+        Recipe["recipe/<br/>無地に戻すレシピと登録"]
     end
     subgraph Client["クライアントだけ"]
         Tex["SignTextures<br/>定義の読み込み"]

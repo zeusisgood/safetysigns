@@ -22,6 +22,7 @@ flowchart TD
     Sneak2 -- はい --> Copy["看板の図柄を手のアイテムに写す<br/>（設置しない）"]
     Sneak2 -- いいえ --> Place["隣に設置<br/>（アイテムの図柄を引き継ぐ）"]
     Held -- ほかの物 --> Vanilla[バニラどおりに使う]
-    Held -- 素手 --> Next[次の手へ]
-    Next --> Use
+    Held -- 素手 --> Next{"オフの手が残っている"}
+    Next -- はい --> Use
+    Next -- いいえ --> Nothing[何も起きない]
 ```
