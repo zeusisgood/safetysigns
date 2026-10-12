@@ -6,6 +6,7 @@ import io.github.zeusisgood.safetysigns.common.SignOutline;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -17,6 +18,9 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 看板の板を描く。板は図柄のテクスチャの形（三角・円・四角）に切り抜き、厚さ 1 ピクセル。
  * <ul>
@@ -26,6 +30,7 @@ import org.lwjgl.opengl.GL11;
  * 複数マスの看板は、代表のマス（正面から見て左下）の TileEntity が、図柄を面全体（2×2 なら 2×2 ブロック）に引き伸ばして描く。
  * 面の位置はブロックが決める（{@link BlockSafetySign#getFaceRow()}・{@link BlockSafetySign#getFaceZ()}。ポール付きは最上段の板だけ）。
  * ブロックモデルは板を持たない（ポール付きの支柱と金具だけ）。
+ * 板の形はテクスチャと看板の種類ごとに 1 回だけディスプレイリストに組み立て、毎フレームそれを呼ぶ（テクスチャを貼り直したら作り直す）。
  */
 public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign> {
 
@@ -39,6 +44,11 @@ public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign
     private static final float SHADE_BOTTOM = 0.5F;
     private static final float SHADE_SIDE = 0.7F;
 
+    /** 取っておいた板の形（ディスプレイリストの番号）。キーはテクスチャと看板のブロック（大きさと面の位置が決まる）。 */
+    private final Map<ShapeKey, Integer> displayLists = new HashMap<>();
+    /** displayLists を作ったときの、テクスチャを貼り直した回数。 */
+    private int listGeneration = -1;
+
     @Override
     public void render(TileEntitySafetySign te, double x, double y, double z, float partialTicks, int destroyStage,
             float alpha) {
@@ -48,22 +58,7 @@ public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign
         }
         EnumFacing facing = state.getValue(BlockSafetySign.FACING);
         BlockSafetySign block = (BlockSafetySign) state.getBlock();
-        SignLayout layout = block.getLayout();
         ResourceLocation texture = SignTextures.textureOf(te.getSignId());
-        TextureAtlasSprite front = SignTextures.sprite(texture);
-        TextureAtlasSprite back = SignTextures.sprite(SignTextures.BACK);
-        SignOutline outline = SignTextures.outlineOf(texture);
-
-        // ブロックの中心を原点にした、板の表と裏の z（表は -z を向く）
-        double frontZ = block.getFaceZ() - 0.5;
-        double backZ = frontZ + THICKNESS;
-        // 北（-Z）から見て、画像の左上が左上に来るように（北から見ると +X が左）。
-        // 代表のマスが左下なので、右（-X）と上（+Y）へ看板の幅・高さの分だけ広げる。下端は面の行から（ポール付きは最上段）
-        double left = 0.5;
-        double right = 0.5 - layout.getWidth();
-        double bottom = -0.5 + block.getFaceRow();
-        double top = -0.5 + layout.getHeight();
-        Plane plane = new Plane(left, right, top, bottom, outline.getWidth(), outline.getHeight());
 
         bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         GlStateManager.pushMatrix();
@@ -81,6 +76,66 @@ public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign
             int light = getWorld().getCombinedLight(te.getPos().up(block.getFaceRow()), 0);
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, light % 65536, light / 65536);
         }
+
+        // 板の形は、テクスチャと看板の種類ごとに 1 回だけ組み立てて、毎フレームそれを呼ぶ
+        // （高解像度のリソースパックだと、1 枚の板が数百〜千の四角になるため）。明るさと向きは毎回ここで決める
+        GlStateManager.callList(displayList(texture, block));
+        // リストの頂点色（灰色の陰影）が GL の今の色に残る。GlStateManager の覚えている色を捨て、次の color() が必ず届くようにする
+        GlStateManager.resetColor();
+
+        GlStateManager.enableCull();
+        GlStateManager.enableLighting();
+        GlStateManager.popMatrix();
+    }
+
+    /** 板の形のディスプレイリスト。テクスチャを貼り直したら（図柄の場所と形が変わるので）全部作り直す。 */
+    private int displayList(ResourceLocation texture, BlockSafetySign block) {
+        int generation = SignTextures.generation();
+        if (generation != listGeneration) {
+            for (int list : displayLists.values()) {
+                GLAllocation.deleteDisplayLists(list);
+            }
+            displayLists.clear();
+            listGeneration = generation;
+        }
+        ShapeKey key = new ShapeKey(texture, block);
+        Integer list = displayLists.get(key);
+        if (list == null) {
+            list = GLAllocation.generateDisplayLists(1);
+            boolean compiled = false;
+            GlStateManager.glNewList(list, GL11.GL_COMPILE);
+            try {
+                drawShape(texture, block);
+                compiled = true;
+            } finally {
+                // 途中で失敗してもリストを閉じる（開いたままだと以後の GL がおかしくなる）。失敗したリストは捨てる
+                GlStateManager.glEndList();
+                if (!compiled) {
+                    GLAllocation.deleteDisplayLists(list);
+                }
+            }
+            displayLists.put(key, list);
+        }
+        return list;
+    }
+
+    /** 板の表・裏・縁を描く（ブロックの中心が原点、北向き）。ディスプレイリストに記録するために呼ぶ。 */
+    private static void drawShape(ResourceLocation texture, BlockSafetySign block) {
+        SignLayout layout = block.getLayout();
+        TextureAtlasSprite front = SignTextures.sprite(texture);
+        TextureAtlasSprite back = SignTextures.sprite(SignTextures.BACK);
+        SignOutline outline = SignTextures.outlineOf(texture);
+
+        // ブロックの中心を原点にした、板の表と裏の z（表は -z を向く）
+        double frontZ = block.getFaceZ() - 0.5;
+        double backZ = frontZ + THICKNESS;
+        // 北（-Z）から見て、画像の左上が左上に来るように（北から見ると +X が左）。
+        // 代表のマスが左下なので、右（-X）と上（+Y）へ看板の幅・高さの分だけ広げる。下端は面の行から（ポール付きは最上段）
+        double left = 0.5;
+        double right = 0.5 - layout.getWidth();
+        double bottom = -0.5 + block.getFaceRow();
+        double top = -0.5 + layout.getHeight();
+        Plane plane = new Plane(left, right, top, bottom, outline.getWidth(), outline.getHeight());
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
@@ -116,10 +171,6 @@ public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign
             }
         }
         tessellator.draw();
-
-        GlStateManager.enableCull();
-        GlStateManager.enableLighting();
-        GlStateManager.popMatrix();
     }
 
     private static void quad(BufferBuilder buffer, float shade,
@@ -131,6 +182,31 @@ public class SignRenderer extends TileEntitySpecialRenderer<TileEntitySafetySign
         buffer.pos(x1, y1, z1).tex(u1, v1).color(shade, shade, shade, 1.0F).endVertex();
         buffer.pos(x2, y2, z2).tex(u2, v2).color(shade, shade, shade, 1.0F).endVertex();
         buffer.pos(x3, y3, z3).tex(u3, v3).color(shade, shade, shade, 1.0F).endVertex();
+    }
+
+    /** ディスプレイリストのキー: テクスチャと看板のブロック（ブロックは種類ごとに 1 つなので、同じかどうかで比べる）。 */
+    private static final class ShapeKey {
+        private final ResourceLocation texture;
+        private final BlockSafetySign block;
+
+        ShapeKey(ResourceLocation texture, BlockSafetySign block) {
+            this.texture = texture;
+            this.block = block;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof ShapeKey)) {
+                return false;
+            }
+            ShapeKey key = (ShapeKey) other;
+            return texture.equals(key.texture) && block == key.block;
+        }
+
+        @Override
+        public int hashCode() {
+            return texture.hashCode() * 31 + System.identityHashCode(block);
+        }
     }
 
     /** テクスチャのピクセルの座標（左上が 0）から、看板の面の上の座標へ。 */

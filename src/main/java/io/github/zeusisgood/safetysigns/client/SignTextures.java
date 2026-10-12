@@ -56,6 +56,8 @@ public final class SignTextures {
 
     private static volatile SignCatalog catalog = SignCatalog.EMPTY;
     private static volatile Map<ResourceLocation, SignOutline> outlines = Collections.emptyMap();
+    /** テクスチャを貼り直した回数。描画が取っておいた形（SignRenderer のディスプレイリスト）を作り直す合図。 */
+    private static volatile int generation;
 
     private SignTextures() {
     }
@@ -87,6 +89,7 @@ public final class SignTextures {
         map.registerSprite(BACK);
         outlines = shapes;
         catalog = loaded;
+        generation++;
         SafetySignsMod.LOGGER.info("Loaded {} sign definitions", loaded.all().size());
     }
 
@@ -149,6 +152,11 @@ public final class SignTextures {
         } catch (IOException e) {
             return false;
         }
+    }
+
+    /** テクスチャを貼り直した回数（貼り直すと図柄のテクスチャの場所と板の形が変わる）。 */
+    public static int generation() {
+        return generation;
     }
 
     /** テクスチャ（{@link #textureOf} の結果）から切り抜いた板の形。 */

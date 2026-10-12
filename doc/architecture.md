@@ -9,7 +9,7 @@
 - 看板の図柄は、TileEntity とアイテムの NBT に**図柄 ID の文字列**で持つ（[ADR 0001](adr/0001-store-sign-pattern-as-string-id.md)）。
 - 図柄の一覧（定義ファイル）はクライアントだけが読む。サーバーは ID の文字列を保存・同期し、届いた ID の形と距離を確かめるだけ（[ADR 0002](adr/0002-load-sign-definitions-on-texture-stitch.md)）。
 - 看板は 1 マス以上を使う（壁掛け 1×1・2×2、ポール付き）。図柄は代表のマス（正面から見て左下。ポール付きは最下段の支柱）の TileEntity だけが持ち、ほかのマスは部品の番号だけを状態に持つ（[ADR 0004](adr/0004-multiblock-signs-with-a-representative-cell.md)、[ADR 0005](adr/0005-pole-sign-keeps-the-pattern-in-the-pole-cell.md)、[`diagrams/multiblock.md`](diagrams/multiblock.md)）。
-- 見た目: 看板の板は、代表のマスの TileEntity の描画（`SignRenderer`）が、図柄を描く面（ブロックの `getFaceRow`・`getFaceZ`。壁掛けは看板全体、ポール付きは最上段の板）に、図柄のテクスチャの形に切り抜いて描く（表は図柄、裏と縁は灰色。形は `common/SignOutline` がテクスチャのアルファから作る。[ADR 0006](adr/0006-draw-the-plate-cut-to-the-pattern-shape.md)）。ブロックモデル（JSON）は板を持たない（壁掛けは何も描かない。ポール付きは支柱と固定金具）。アイテムは `SignItemModel` が NBT に合わせて図柄のテクスチャ 1 枚のモデルに差し替える。
+- 見た目: 看板の板は、代表のマスの TileEntity の描画（`SignRenderer`）が、図柄を描く面（ブロックの `getFaceRow`・`getFaceZ`。壁掛けは看板全体、ポール付きは最上段の板）に、図柄のテクスチャの形に切り抜いて描く（表は図柄、裏と縁は灰色。形は `common/SignOutline` がテクスチャのアルファから作る。組み立てた板はテクスチャと看板の種類ごとにディスプレイリストに取っておき、テクスチャを貼り直したら作り直す。[ADR 0006](adr/0006-draw-the-plate-cut-to-the-pattern-shape.md)）。ブロックモデル（JSON）は板を持たない（壁掛けは何も描かない。ポール付きは支柱と固定金具）。アイテムは `SignItemModel` が NBT に合わせて図柄のテクスチャ 1 枚のモデルに差し替える。
 
 | パッケージ / ファイル | 役割 | 動く場所 |
 |---|---|---|
