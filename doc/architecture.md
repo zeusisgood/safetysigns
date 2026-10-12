@@ -12,7 +12,7 @@
 | パッケージ / ファイル | 役割 | 動く場所 |
 |---|---|---|
 | `SafetySignsMod` | `@Mod` 本体。mod ID・版・接続できる版の範囲 | 両方 |
-| `block/SafetySignsBlocks` | ブロックと設置用アイテム（`ItemBlock`）の登録 | 両方 |
+| `block/SafetySignsBlocks` | ブロックと設置用アイテム（`ItemBlock`）の登録（`@Mod.EventBusSubscriber` で Forge が自動で見つける） | 両方 |
 | `block/BlockWallSign` | 壁掛け看板 1×1。向き（4 方向）・当たり判定（厚さ 1 ピクセル） | 両方 |
 | `client/ClientModels` | アイテムのモデルの登録 | クライアントだけ |
 | `assets/safetysigns/blockstates`・`models` | 向きごとのモデルの回転、前面（図柄）と裏面・側面（金属板）のテクスチャ | クライアントだけ |
@@ -30,8 +30,9 @@ flowchart LR
         Assets["blockstates / models<br/>w003 のテクスチャ"]
     end
     Forge["Forge のレジストリ"]
-    Mod -. 読み込み .-> Reg
-    Reg -- RegistryEvent --> Forge
+    Forge -. "@Mod.EventBusSubscriber を自動で見つける" .-> Reg
+    Forge -. "@Mod を読み込む" .-> Mod
+    Reg -- RegistryEvent で登録 --> Forge
     Reg --> Block
     Reg --> Item
     Models -- ModelRegistryEvent --> Assets
