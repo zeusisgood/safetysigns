@@ -66,6 +66,14 @@ public class ItemSafetySign extends ItemBlock {
         BlockSafetySign sign = (BlockSafetySign) block;
         if (!sign.getLayout().canPlace(BlockSafetySign.toGrid(pos), newState.getValue(BlockSafetySign.FACING).getHorizontalIndex(),
                 cell -> canPlacePart(BlockSafetySign.toBlockPos(cell), stack, player, world, side))) {
+            if (!world.isRemote) {
+                // クライアントは同じ判定で先に置いて見せることがある（サーバーにだけいる物とぶつかったなど）。
+                // バニラが送り直すのはクリックした辺りだけなので、全部のマスの今の状態を送り直して幽霊ブロックを消す
+                for (BlockPos cell : sign.getCells(newState, pos)) {
+                    IBlockState current = world.getBlockState(cell);
+                    world.notifyBlockUpdate(cell, current, current, 3);
+                }
+            }
             return false;
         }
         // 代表のマス（TileEntity と図柄の引き継ぎは onBlockPlacedBy）
@@ -83,10 +91,10 @@ public class ItemSafetySign extends ItemBlock {
         return true;
     }
 
-    /** 看板の 1 マスを置けるか（置き換え可能・高さの範囲・いじってよい場所・人や物とぶつからない）。 */
+    /** 看板の 1 マスを置けるか（置き換え可能・高さの範囲・いじってよい場所・置く人以外の人や物とぶつからない）。 */
     private boolean canPlacePart(BlockPos cell, ItemStack stack, EntityPlayer player, World world, EnumFacing side) {
         return !world.isOutsideBuildHeight(cell) && player.canPlayerEdit(cell, side, stack)
-                && world.mayPlace(block, cell, false, side, null);
+                && world.mayPlace(block, cell, false, side, player);
     }
 
     @Override

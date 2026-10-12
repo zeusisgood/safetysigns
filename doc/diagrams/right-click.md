@@ -13,7 +13,7 @@
 ```mermaid
 flowchart TD
     Start([設置済みの看板を右クリック]) --> Sneak{スニーク中で<br/>どちらかの手に物がある}
-    Sneak -- いいえ --> Act["BlockWallSign.onBlockActivated<br/>（メインの手）"]
+    Sneak -- いいえ --> Act["BlockSafetySign.onBlockActivated<br/>（メインの手）"]
     Act --> MainSign{メインの手が<br/>看板アイテム}
     MainSign -- いいえ（素手・ほかの物） --> Gui[図柄選択の GUI を開く]
     MainSign -- はい --> Use
