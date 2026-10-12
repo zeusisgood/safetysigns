@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 
 // 版は SafetySignsMod.VERSION と必ず揃える（CLAUDE.md のバージョンの方針）
-version = '0.2.1'
+version = '0.3.0'
 group = 'io.github.zeusisgood'
 // jar 名を safetysigns-1.12.2-<版>.jar にする
 archivesBaseName = 'safetysigns-1.12.2'

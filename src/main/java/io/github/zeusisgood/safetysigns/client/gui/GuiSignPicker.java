@@ -64,7 +64,11 @@ public class GuiSignPicker extends GuiScreen {
 
     private static final int BUTTON_BLANK = 0;
 
+    /** 看板の代表のマス。 */
     private final BlockPos pos;
+    /** 看板の幅と高さ（ブロック）。プレビューをこの縦横比で描く。 */
+    private final int signWidth;
+    private final int signHeight;
     /** GUI で選んでいる図柄 ID（null は無地）。サーバーへ送った値。 */
     @Nullable
     private String selected;
@@ -81,9 +85,11 @@ public class GuiSignPicker extends GuiScreen {
     private int left;
     private int top;
 
-    public GuiSignPicker(BlockPos pos, @Nullable String currentSignId) {
+    public GuiSignPicker(BlockPos pos, @Nullable String currentSignId, int signWidth, int signHeight) {
         this.pos = pos;
         this.selected = currentSignId;
+        this.signWidth = signWidth;
+        this.signHeight = signHeight;
     }
 
     private SignCatalog catalog() {
@@ -127,7 +133,7 @@ public class GuiSignPicker extends GuiScreen {
     @Override
     public void updateScreen() {
         search.updateCursorCounter();
-        // 看板が壊れた・離れたら閉じる
+        // 看板が壊れた・離れたら閉じる（pos は代表のマス。どのマスが壊れても全体が消えるので、ここだけ見ればよい）
         if (!(mc.world.getTileEntity(pos) instanceof TileEntitySafetySign)
                 || mc.player.getDistanceSq(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > MessageSetSign.MAX_DISTANCE_SQ) {
             mc.displayGuiScreen(null);
@@ -366,7 +372,7 @@ public class GuiSignPicker extends GuiScreen {
                 int y = gridTop + row * CELL;
                 boolean isSelected = definition.getId().equals(selected);
                 drawRect(x + 1, y + 1, x + CELL - 1, y + CELL - 1, isSelected ? 0xFFFFFFFF : SLOT);
-                drawSign(new ResourceLocation(definition.getTexture()), x + 2, y + 2, 16);
+                drawSign(new ResourceLocation(definition.getTexture()), x + 2, y + 2, 16, 16);
                 if (definition == hovered) {
                     drawRect(x + 2, y + 2, x + 18, y + 18, 0x80FFFFFF);
                 }
@@ -386,13 +392,16 @@ public class GuiSignPicker extends GuiScreen {
     }
 
     private void drawPreview() {
-        int x = left + PREVIEW_X + (PREVIEW_W - PREVIEW_SIZE) / 2;
-        int y = top + GRID_Y;
-        drawRect(x - 1, y - 1, x + PREVIEW_SIZE + 1, y + PREVIEW_SIZE + 1, PANEL_DARK);
-        drawSign(SignTextures.textureOf(selected), x, y, PREVIEW_SIZE);
+        // 看板の縦横比で、PREVIEW_SIZE の四角に収まる大きさ（2×2 は 1×1 と同じ正方形。縦長・横長の看板なら細くなる）
+        int previewW = signWidth >= signHeight ? PREVIEW_SIZE : PREVIEW_SIZE * signWidth / signHeight;
+        int previewH = signHeight >= signWidth ? PREVIEW_SIZE : PREVIEW_SIZE * signHeight / signWidth;
+        int x = left + PREVIEW_X + (PREVIEW_W - previewW) / 2;
+        int y = top + GRID_Y + (PREVIEW_SIZE - previewH) / 2;
+        drawRect(x - 1, y - 1, x + previewW + 1, y + previewH + 1, PANEL_DARK);
+        drawSign(SignTextures.textureOf(selected), x, y, previewW, previewH);
 
         // コードと名前
-        int textY = y + PREVIEW_SIZE + 6;
+        int textY = top + GRID_Y + PREVIEW_SIZE + 6;
         List<String> lines = new ArrayList<>();
         SignDefinition definition = catalog().get(selected);
         if (selected == null) {
@@ -414,14 +423,14 @@ public class GuiSignPicker extends GuiScreen {
     }
 
     /** 無地の板の上に図柄を重ねて描く（図柄の透明な所から板が見えるように、看板と同じ重ね方）。 */
-    private void drawSign(ResourceLocation texture, int x, int y, int size) {
+    private void drawSign(ResourceLocation texture, int x, int y, int w, int h) {
         mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.enableBlend();
-        drawTexturedModalRect(x, y, SignTextures.sprite(SignTextures.BLANK), size, size);
+        drawTexturedModalRect(x, y, SignTextures.sprite(SignTextures.BLANK), w, h);
         if (!texture.equals(SignTextures.BLANK)) {
             TextureAtlasSprite sprite = SignTextures.sprite(texture);
-            drawTexturedModalRect(x, y, sprite, size, size);
+            drawTexturedModalRect(x, y, sprite, w, h);
         }
         GlStateManager.disableBlend();
     }
