@@ -1,0 +1,16 @@
+[
+{
+  "modid": "safetysigns",
+  "name": "Safety Signs",
+  "description": "Decorative warning signs inspired by ISO 7010 safety signs. Not affiliated with ISO.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["zeusisgood"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
