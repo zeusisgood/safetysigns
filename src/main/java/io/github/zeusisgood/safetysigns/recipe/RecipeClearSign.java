@@ -8,7 +8,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
 /**
- * 看板アイテム 1 個だけをクラフト枠に入れると、同じアイテムの無地（NBT なし）になる。
+ * 看板アイテム 1 個だけをクラフト枠に入れると、同じアイテムの無地（NBT なし。切り抜き・裏面・夜間に光るかも既定に戻る）になる。
  * 種類・サイズを問わず、看板アイテムならどれでもよい。もともと無地（NBT なし）なら何も出さない。
  */
 public class RecipeClearSign extends IForgeRegistryEntry.Impl<IRecipe> implements IRecipe {

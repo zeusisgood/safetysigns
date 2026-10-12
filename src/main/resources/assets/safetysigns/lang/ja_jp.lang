@@ -20,3 +20,7 @@ gui.safetysigns.back.silver=銀
 gui.safetysigns.back.pattern=図柄
 tooltip.safetysigns.no_cutout=切り抜きなし
 tooltip.safetysigns.double_sided=両面
+gui.safetysigns.glow=夜間に光る: %s
+gui.safetysigns.glow.on=ON
+gui.safetysigns.glow.off=OFF
+tooltip.safetysigns.no_glow=光らない

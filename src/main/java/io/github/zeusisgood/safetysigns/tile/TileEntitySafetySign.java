@@ -13,7 +13,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 
 /**
- * 看板の見た目（図柄 ID・切り抜き・裏面。{@link SignAppearance}）を持つ TileEntity。既定の値は NBT にキーを書かない。
+ * 看板の見た目（図柄 ID・切り抜き・裏面・光るか。{@link SignAppearance}）を持つ TileEntity。既定の値は NBT にキーを書かない。
  * サーバーは図柄の一覧を知らないので、ID の文字列と真偽値をそのまま保存・同期するだけ。
  * 複数マスの看板では、代表のマス（左下）だけが持つ。
  */

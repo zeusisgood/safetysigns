@@ -35,7 +35,7 @@ public class ItemSafetySign extends ItemBlock {
         setRegistryName(block.getRegistryName());
     }
 
-    /** 見た目（図柄・切り抜き・裏面）を持ったアイテム（ドロップ・ピックブロック）。既定の見た目なら NBT なし。 */
+    /** 見た目（図柄・切り抜き・裏面・光るか）を持ったアイテム（ドロップ・ピックブロック）。既定の見た目なら NBT なし。 */
     public static ItemStack createStack(Item item, SignAppearance appearance) {
         ItemStack stack = new ItemStack(item);
         SignNbt.set(stack, appearance);
@@ -45,7 +45,7 @@ public class ItemSafetySign extends ItemBlock {
     @Override
     public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing,
             float hitX, float hitY, float hitZ) {
-        // スニーク中はバニラが看板の onBlockActivated を呼ばずにここへ来る。看板なら図柄（切り抜き・裏面も）を写して終わり（設置しない）
+        // スニーク中はバニラが看板の onBlockActivated を呼ばずにここへ来る。看板なら図柄（切り抜き・裏面・光るかも）を写して終わり（設置しない）
         // 複数マスの看板は、どのマスを狙っても代表のマスの図柄
         TileEntitySafetySign tile = BlockSafetySign.getSignTile(world, pos);
         if (player.isSneaking() && tile != null) {
@@ -111,6 +111,9 @@ public class ItemSafetySign extends ItemBlock {
         }
         if (appearance.isBackPattern()) {
             tooltip.add(I18n.format("tooltip.safetysigns.double_sided"));
+        }
+        if (!appearance.isGlow()) {
+            tooltip.add(I18n.format("tooltip.safetysigns.no_glow"));
         }
     }
 }

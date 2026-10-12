@@ -20,3 +20,7 @@ gui.safetysigns.back.silver=Silver
 gui.safetysigns.back.pattern=Pattern
 tooltip.safetysigns.no_cutout=Not cut out
 tooltip.safetysigns.double_sided=Double-sided
+gui.safetysigns.glow=Night glow: %s
+gui.safetysigns.glow.on=ON
+gui.safetysigns.glow.off=OFF
+tooltip.safetysigns.no_glow=Does not glow

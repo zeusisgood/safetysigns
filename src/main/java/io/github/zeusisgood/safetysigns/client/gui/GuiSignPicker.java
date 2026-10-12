@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * 図柄選択の GUI。上にカテゴリのタブ、左に図柄のグリッド、右にプレビュー、下に検索欄と「無地に戻す」、その下に切り抜き・裏面の切り替え。
- * 図柄をクリックするたびにサーバーへ送る（決定ボタンなし）。コンテナを持たないので、クライアントだけで開く。
+ * 図柄選択の GUI。上にカテゴリのタブ、左に図柄のグリッド、右にプレビューとその下に夜間に光るかの切り替え、下に検索欄と「無地に戻す」、その下に切り抜き・裏面の切り替え。
+ * 図柄をクリック・設定を切り替えるたびにサーバーへ送る（決定ボタンなし）。コンテナを持たないので、クライアントだけで開く。
  */
 public class GuiSignPicker extends GuiScreen {
 
@@ -61,6 +61,8 @@ public class GuiSignPicker extends GuiScreen {
     private static final int PREVIEW_X = 146;
     private static final int PREVIEW_W = WIDTH - PREVIEW_X - 8;
     private static final int PREVIEW_SIZE = 64;
+    /** プレビューの下の、夜間に光るかの切り替え。 */
+    private static final int GLOW_Y = GRID_Y + PREVIEW_SIZE + 4;
     private static final int BOTTOM_Y = 172;
     /** 2 段目（切り抜き・裏面の切り替え）。 */
     private static final int OPTIONS_Y = BOTTOM_Y + 24;
@@ -68,6 +70,7 @@ public class GuiSignPicker extends GuiScreen {
     private static final int BUTTON_BLANK = 0;
     private static final int BUTTON_CUTOUT = 1;
     private static final int BUTTON_BACK = 2;
+    private static final int BUTTON_GLOW = 3;
 
     /** 看板の代表のマス。 */
     private final BlockPos pos;
@@ -77,9 +80,10 @@ public class GuiSignPicker extends GuiScreen {
     /** GUI で選んでいる図柄 ID（null は無地）。サーバーへ送った値。 */
     @Nullable
     private String selected;
-    /** 切り抜き（true が既定）と裏面（true が図柄）。サーバーへ送った値。 */
+    /** 切り抜き（true が既定）・裏面（true が図柄）・夜間に光る（true が既定）。サーバーへ送った値。 */
     private boolean cutout;
     private boolean backPattern;
+    private boolean glow;
 
     /** 選んでいるタブ。検索中は null（全カテゴリ横断）。 */
     @Nullable
@@ -92,6 +96,7 @@ public class GuiSignPicker extends GuiScreen {
     private GuiButton blankButton;
     private GuiButton cutoutButton;
     private GuiButton backButton;
+    private GuiButton glowButton;
     private int left;
     private int top;
 
@@ -100,6 +105,7 @@ public class GuiSignPicker extends GuiScreen {
         this.selected = current.getSignId();
         this.cutout = current.isCutout();
         this.backPattern = current.isBackPattern();
+        this.glow = current.isGlow();
         this.signWidth = signWidth;
         this.signHeight = signHeight;
     }
@@ -125,6 +131,7 @@ public class GuiSignPicker extends GuiScreen {
                 I18n.format("gui.safetysigns.reset_blank")));
         cutoutButton = addButton(new GuiButton(BUTTON_CUTOUT, left + GRID_X, top + OPTIONS_Y, COLUMNS * CELL + SCROLL_W + 2, 20, ""));
         backButton = addButton(new GuiButton(BUTTON_BACK, left + PREVIEW_X, top + OPTIONS_Y, PREVIEW_W, 20, ""));
+        glowButton = addButton(new GuiButton(BUTTON_GLOW, left + PREVIEW_X, top + GLOW_Y, PREVIEW_W, 20, ""));
         refreshOptionButtons();
 
         if (tab == null && previousText.isEmpty()) {
@@ -178,13 +185,15 @@ public class GuiSignPicker extends GuiScreen {
         blankButton.enabled = selected != null;
     }
 
-    /** 切り抜き・裏面のボタンの文字と押せるか。無地は形が四角しかないので、切り抜きは ON のまま押せない表示にする。 */
+    /** 切り抜き・裏面・夜間に光るかのボタンの文字と押せるか。無地は形が四角しかないので、切り抜きは ON のまま押せない表示にする（光るかは無地でも押せる）。 */
     private void refreshOptionButtons() {
         cutoutButton.displayString = I18n.format("gui.safetysigns.cutout",
                 I18n.format(cutout ? "gui.safetysigns.cutout.on" : "gui.safetysigns.cutout.off"));
         cutoutButton.enabled = selected != null;
         backButton.displayString = I18n.format("gui.safetysigns.back",
                 I18n.format(backPattern ? "gui.safetysigns.back.pattern" : "gui.safetysigns.back.silver"));
+        glowButton.displayString = I18n.format("gui.safetysigns.glow",
+                I18n.format(glow ? "gui.safetysigns.glow.on" : "gui.safetysigns.glow.off"));
     }
 
     private int maxScroll() {
@@ -206,9 +215,9 @@ public class GuiSignPicker extends GuiScreen {
         send();
     }
 
-    /** 今の選択（図柄・切り抜き・裏面）をサーバーへ送る。サーバーが距離などを確かめてから書き込む。 */
+    /** 今の選択（図柄・切り抜き・裏面・光るか）をサーバーへ送る。サーバーが距離などを確かめてから書き込む。 */
     private void send() {
-        SafetySignsNetwork.CHANNEL.sendToServer(new MessageSetSign(pos, new SignAppearance(selected, cutout, backPattern)));
+        SafetySignsNetwork.CHANNEL.sendToServer(new MessageSetSign(pos, new SignAppearance(selected, cutout, backPattern, glow)));
     }
 
     // ---- 入力 ----
@@ -294,6 +303,10 @@ public class GuiSignPicker extends GuiScreen {
             send();
         } else if (button.id == BUTTON_BACK) {
             backPattern = !backPattern;
+            refreshOptionButtons();
+            send();
+        } else if (button.id == BUTTON_GLOW) {
+            glow = !glow;
             refreshOptionButtons();
             send();
         }
@@ -446,8 +459,8 @@ public class GuiSignPicker extends GuiScreen {
         }
         drawSign(SignTextures.textureOf(selected), x, y, previewW, previewH);
 
-        // コードと名前
-        int textY = top + GRID_Y + PREVIEW_SIZE + 6;
+        // コードと名前（夜間に光るかのボタンの下）
+        int textY = top + GLOW_Y + 24;
         List<String> lines = new ArrayList<>();
         SignDefinition definition = catalog().get(selected);
         if (selected == null) {

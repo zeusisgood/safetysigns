@@ -15,8 +15,8 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 /**
- * クライアント → サーバー: 看板の見た目（図柄・切り抜き・裏面）を変える（GUI で選ぶ・切り替えるたびに送る）。
- * 中身: 看板の位置（long）、図柄があるか（boolean）、図柄 ID（UTF-8、あるときだけ）、切り抜き（boolean）、裏面が図柄か（boolean）。
+ * クライアント → サーバー: 看板の見た目（図柄・切り抜き・裏面・光るか）を変える（GUI で選ぶ・切り替えるたびに送る）。
+ * 中身: 看板の位置（long）、図柄があるか（boolean）、図柄 ID（UTF-8、あるときだけ）、切り抜き（boolean）、裏面が図柄か（boolean）、夜間に光るか（boolean）。
  * 中身を変えたら互換性を破るのでマイナーを上げる。
  */
 public class MessageSetSign implements IMessage {
@@ -41,7 +41,8 @@ public class MessageSetSign implements IMessage {
         String signId = buf.readBoolean() ? ByteBufUtils.readUTF8String(buf) : null;
         boolean cutout = buf.readBoolean();
         boolean backPattern = buf.readBoolean();
-        appearance = new SignAppearance(signId, cutout, backPattern);
+        boolean glow = buf.readBoolean();
+        appearance = new SignAppearance(signId, cutout, backPattern, glow);
     }
 
     @Override
@@ -54,6 +55,7 @@ public class MessageSetSign implements IMessage {
         }
         buf.writeBoolean(appearance.isCutout());
         buf.writeBoolean(appearance.isBackPattern());
+        buf.writeBoolean(appearance.isGlow());
     }
 
     public static class Handler implements IMessageHandler<MessageSetSign, IMessage> {
@@ -64,7 +66,7 @@ public class MessageSetSign implements IMessage {
             return null;
         }
 
-        // クライアントから届いた値を正にしない: ID の形・看板が届く距離にあるか・いじってよい場所かを確かめる（切り抜き・裏面は真偽値なので形の確認は要らない）
+        // クライアントから届いた値を正にしない: ID の形・看板が届く距離にあるか・いじってよい場所かを確かめる（切り抜き・裏面・光るかは真偽値なので形の確認は要らない）
         private static void apply(EntityPlayerMP player, MessageSetSign message) {
             String signId = message.appearance.getSignId();
             if (signId != null && !SignIds.isValid(signId)) {
