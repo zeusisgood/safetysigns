@@ -438,27 +438,23 @@ def skull_crossbones(cx, cy, size):
 
 
 def exploding_bomb_shape():
-    """爆発する爆弾（原点の中心で高さ 40）。上がぎざぎざに割れた玉と、上と左右へ飛ぶ光の線・破片。"""
-    bomb_c = (0.0, 9.0)
+    """爆発する爆弾（原点の中心で高さ 40）。上がぎざぎざに割れた大きな玉と、上と左右へ飛ぶ太い破片 4 つ。"""
+    bomb_c = (0.0, 7.0)
+    bomb_r = 12.0
     # 割れ口: 玉の上をぎざぎざの線で切る
-    teeth = [(-12.0, bomb_c[1] + 30.0), (-12.0, bomb_c[1] - 2.0)]
-    for i in range(9):
-        teeth.append((-10.8 + i * 2.7, bomb_c[1] - (7.4 if i % 2 else 3.4)))
-    teeth += [(12.0, bomb_c[1] - 2.0), (12.0, bomb_c[1] + 30.0)]
-    bomb = circle(*bomb_c, 10.4) & polygon(teeth)
-    rays = []
-    for angle in (-80, -52, -26, 0, 26, 52, 80):
+    teeth = [(-14.0, bomb_c[1] + 30.0), (-14.0, bomb_c[1] - 4.0)]
+    for i in range(7):
+        teeth.append((-10.2 + i * 3.4, bomb_c[1] - (8.6 if i % 2 else 4.2)))
+    teeth += [(14.0, bomb_c[1] - 4.0), (14.0, bomb_c[1] + 30.0)]
+    bomb = circle(*bomb_c, bomb_r) & polygon(teeth)
+    # 破片: 玉から外へ向かって太くなる楔
+    fragments = []
+    for angle in (-62, -21, 21, 62):
         a = math.radians(angle)
         dx, dy = math.sin(a), -math.cos(a)
-        rays.append(tapered((bomb_c[0] + dx * 13.0, bomb_c[1] + dy * 13.0),
-                            (bomb_c[0] + dx * 20.0, bomb_c[1] + dy * 20.0), 1.3, 2.3))
-    # 光の線のあいだを飛ぶ破片（小さな四角を少し回したもの）
-    pieces = []
-    for angle in (-66, -39, -13, 13, 39, 66):
-        a = math.radians(angle)
-        px, py = bomb_c[0] + math.sin(a) * 15.0, bomb_c[1] - math.cos(a) * 15.0
-        pieces.append(rect(-1.4, -1.4, 1.4, 1.4).rotate(angle + 20, 0, 0).shift(px, py))
-    return bomb | union(*rays) | union(*pieces)
+        fragments.append(tapered((bomb_c[0] + dx * 14.6, bomb_c[1] + dy * 14.6),
+                                 (bomb_c[0] + dx * 21.0, bomb_c[1] + dy * 21.0), 1.4, 2.8))
+    return bomb | union(*fragments)
 
 
 def exploding_bomb(cx, cy, size):
@@ -489,13 +485,18 @@ def flame_over_circle(cx, cy, size):
 
 
 def gas_cylinder_shape():
-    """ガスボンベ（原点の中心で高さ 40 の枠に、少し傾けて寝かせる）。左が丸い底、右が肩・首・バルブ。"""
-    body = rounded_rect(-17.0, -6.4, 10.0, 6.4, 6.4) | rounded_rect(-8.0, -6.4, 9.0, 6.4, 2.4)
-    neck = rect(9.0, -2.6, 12.6, 2.6)
-    valve = rounded_rect(12.0, -4.6, 15.6, 4.6, 1.0)
-    handle = rect(14.6, -1.2, 18.0, 1.2)
-    cylinder = body | neck | valve | handle
-    return cylinder.rotate(-24, 0, 0).shift(0.0, 1.0)
+    """ガスボンベ（原点の中心で高さ 40 の枠に、横倒しで置く）。
+
+    左が丸い底の長い円筒の胴、右が少し丸い肩 → 細くくびれた首 → 幅のある口金（バルブ）→ 小さな取っ手。
+    胴の上側に白い細い筋を抜いて、円筒の光沢に見せる（爆弾に見えないように）。
+    傾けると縁がぎざぎざになるので、水平に置く。
+    """
+    body = rounded_rect(-21.0, -6.4, 0.0, 6.4, 6.4) | rounded_rect(-8.0, -6.4, 7.0, 6.4, 2.6)
+    shine = rect(-15.0, -4.2, 3.0, -3.0)
+    neck = rect(6.0, -2.2, 11.6, 2.2)
+    valve = rounded_rect(11.6, -4.8, 17.0, 4.8, 1.0)
+    handle = rect(17.0, -1.4, 20.4, 1.4)
+    return (body - shine) | neck | valve | handle
 
 
 def gas_cylinder(cx, cy, size):
@@ -504,17 +505,21 @@ def gas_cylinder(cx, cy, size):
 
 
 def corrosion_shape():
-    """腐食性物質（原点の中心で高さ 40）。上の 2 本の試験管からしずくが落ち、左の金属板と右の手を溶かす。"""
-    tubes = union(capsule((-13.0, -15.0), (-6.0, -10.6), 2.9), capsule((13.0, -15.0), (6.0, -10.6), 2.9))
-    drops = union(droplet(-5.6, -2.6, 8.4), droplet(5.6, -2.6, 8.4))
-    # 金属板（左）と手（右、指は右向き、親指は上）。しずくの落ちる所が欠けて溶けている
-    plate = rect(-15.0, 6.0, -1.4, 12.0) - circle(-5.6, 5.8, 3.0)
-    palm = rounded_rect(1.4, 6.0, 10.6, 12.8, 2.0)
-    fingers = union(*(capsule((9.0, y), (16.6, y), 1.0) for y in (7.2, 9.4, 11.6)))
-    thumb = capsule((8.4, 6.0), (12.4, 2.8), 1.2)
-    hand_shape_ = (palm | fingers | thumb) - circle(5.6, 5.8, 3.0)
-    ground = rect(-14.0, 15.2, 14.0, 18.0)
-    return tubes | drops | plate | hand_shape_ | ground
+    """腐食性物質（原点の中心で高さ 40）。上の傾いた 2 本の試験管から大きなしずくが落ち、
+    下の左の板と右の手（どちらも単純な形。手は指の境目を 2 本抜き、親指を立てる）がしずくの落ちる所で欠けている。"""
+    def tube(closed, mouth):
+        # 試験管: 底は丸く、口は平らに切る（口の先の半平面を抜く）
+        (x0, y0), (x1, y1) = closed, mouth
+        dx, dy = x1 - x0, y1 - y0
+        return capsule(closed, mouth, 2.6) - Shape(lambda x, y: (x - x1) * dx + (y - y1) * dy > 0)
+    tubes = tube((-9.2, -11.6), (-4.6, -6.6)) | tube((9.2, -11.6), (4.6, -6.6))
+    # 口の下の大きなしずく
+    drops = union(droplet(-4.6, 0.0, 8.4), droplet(4.6, 0.0, 8.4))
+    bite = union(circle(-4.6, 6.8, 3.0), circle(4.6, 6.8, 3.0))
+    plate = rect(-10.4, 6.8, -0.8, 13.0)
+    fingers = union(rect(7.4, 8.8, 10.4, 9.6), rect(7.4, 10.8, 10.4, 11.6))
+    hand_ = (rounded_rect(0.8, 6.8, 10.4, 13.0, 1.8) - fingers) | capsule((7.4, 7.2), (10.0, 4.6), 1.2)
+    return tubes | drops | ((plate | hand_) - bite)
 
 
 def corrosion(cx, cy, size):
