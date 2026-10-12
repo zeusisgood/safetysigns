@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
  *   <li>{@value #KEY}: 図柄 ID の文字列。無地ならキーなし</li>
  *   <li>{@value #CUTOUT_KEY}: 切り抜きが OFF のときだけ false を書く。キーなしは ON</li>
  *   <li>{@value #BACK_PATTERN_KEY}: 裏面が図柄のときだけ true を書く。キーなしは銀</li>
+ *   <li>{@value #GLOW_KEY}: 夜間に光らないときだけ false を書く。キーなしは光る</li>
  * </ul>
  * 既定の値はキーを書かないので、既定の看板のアイテムは NBT を持たない（無地のアイテムとスタックできる）。
  * キー名は既存のワールドとアイテムが参照するので変えない。
@@ -23,6 +24,7 @@ public final class SignNbt {
     public static final String KEY = "SignId";
     public static final String CUTOUT_KEY = "Cutout";
     public static final String BACK_PATTERN_KEY = "BackPattern";
+    public static final String GLOW_KEY = "Glow";
 
     private SignNbt() {
     }
@@ -35,7 +37,8 @@ public final class SignNbt {
         String id = compound.hasKey(KEY, Constants.NBT.TAG_STRING) ? compound.getString(KEY) : null;
         boolean cutout = !compound.hasKey(CUTOUT_KEY, Constants.NBT.TAG_BYTE) || compound.getBoolean(CUTOUT_KEY);
         boolean backPattern = compound.hasKey(BACK_PATTERN_KEY, Constants.NBT.TAG_BYTE) && compound.getBoolean(BACK_PATTERN_KEY);
-        return new SignAppearance(id, cutout, backPattern);
+        boolean glow = !compound.hasKey(GLOW_KEY, Constants.NBT.TAG_BYTE) || compound.getBoolean(GLOW_KEY);
+        return new SignAppearance(id, cutout, backPattern, glow);
     }
 
     /** 見た目を書く。既定の値のキーは消す。 */
@@ -54,6 +57,11 @@ public final class SignNbt {
             compound.setBoolean(BACK_PATTERN_KEY, true);
         } else {
             compound.removeTag(BACK_PATTERN_KEY);
+        }
+        if (appearance.isGlow()) {
+            compound.removeTag(GLOW_KEY);
+        } else {
+            compound.setBoolean(GLOW_KEY, false);
         }
     }
 
@@ -80,7 +88,7 @@ public final class SignNbt {
 
     /**
      * 設置するときに引き継ぐ見た目。クリエイティブではクライアントがアイテムの NBT を自由に作れるので、
-     * 図柄 ID は形の正しいものだけを引き継ぐ（形が違えば無地にする）。切り抜き・裏面は真偽値なのでそのまま。
+     * 図柄 ID は形の正しいものだけを引き継ぐ（形が違えば無地にする）。切り抜き・裏面・光るかは真偽値なのでそのまま。
      */
     public static SignAppearance getValid(ItemStack stack) {
         SignAppearance appearance = get(stack);
