@@ -1,18 +1,20 @@
 """図柄の部品（標識の形と記号）。
 
-どの部品も 32×32 の画像にドットを打つだけで、アンチエイリアスはしない（形はピクセルの中心で内外を決め、
-記号は「#」で書いたドット絵）。色は ISO 3864 の安全色の近似（仕様書 3.3）と透明だけを使う。
+部品は図形（raster.Shape）を返すだけで、塗るのは generate.py。座標は設計の単位（キャンバス全体が 0〜64、
+左上が (0, 0)、中心は (32, 32)）で、出力の解像度に関係なく同じ値で書く（raster.py）。
+色は ISO 3864 の安全色の近似（仕様書 3.3）と透明だけを使う。
 
-座標は左上が (0, 0)。形の中心は (15, 15) の列・行（31 ピクセル幅の形を左右対称に描くため）。
-記号の部品は「中心の列 cx と上端の行 top」か「中心 (cx, cy)」を受け取り、色を引数で受ける
-（警告は黒、指示は白、禁止は黒の記号を同じ部品で描けるように）。
+記号の部品は「中心 (cx, cy) と高さ size（設計の単位）」を受け取る。中では原点を中心にした部品ごとの
+決まった高さで形を書き、place で拡大・移動する。図案はすべてこのファイルで描いたもの（既存の画像や SVG は使わない）。
 """
 import math
 
 from PIL import Image
 
-SIZE = 32
-CENTER = 15
+from raster import (NOTHING, UNITS, annulus, arc_band, capsule, circle, dilate, ellipse, layered, polygon,
+                    polygon_distance, polyline, rect, rounded_rect, sine_band, tapered, union, Shape)
+
+CENTER = UNITS / 2
 
 # ISO 3864 の安全色の近似（仕様書 3.3）
 YELLOW = (0xF9, 0xA8, 0x00, 255)
@@ -24,249 +26,395 @@ WHITE = (0xFF, 0xFF, 0xFF, 255)
 CLEAR = (0, 0, 0, 0)
 
 
-def new_canvas():
-    return Image.new("RGBA", (SIZE, SIZE), CLEAR)
+def new_canvas(size):
+    return Image.new("RGBA", (size, size), CLEAR)
 
 
-def fill_where(image, inside, color):
-    """inside(x, y) が真のピクセルを塗る（x, y はピクセルの番号）。"""
-    for y in range(SIZE):
-        for x in range(SIZE):
-            if inside(x, y):
-                image.putpixel((x, y), color)
-
-
-def dots(image, rows, left, top, color):
-    """ドット絵の部品。rows は文字列の行で、「#」の所を塗る（それ以外は触らない）。"""
-    for row, line in enumerate(rows):
-        for col, dot in enumerate(line):
-            if dot == "#":
-                image.putpixel((left + col, top + row), color)
-
-
-def dots_centered(image, rows, cx, top, color):
-    """dots を、行の幅の中心が列 cx に来るように置く（幅は奇数にしておく）。"""
-    width = max(len(line) for line in rows)
-    dots(image, rows, cx - width // 2, top, color)
+def place(shape, height, cx, cy, size, mirror=False):
+    """原点を中心に高さ height で書いた部品を、中心 (cx, cy)・高さ size に置く。mirror は左右反転（右向き → 左向き）。"""
+    if mirror:
+        shape = shape.mirror(0)
+    return shape.scale(size / height).shift(cx, cy)
 
 
 # ---- 標識の形 ----
+# 外形は 1 単位の透明な余白を残して 62 単位に収める（板の縁がテクスチャの端に貼りつかないように）。
 
-TRIANGLE_TOP = 3
-TRIANGLE_ROWS = 27  # 31 ピクセル幅の正三角形の高さ（31 × √3 / 2 ≒ 26.8）
+# 警告の三角形: 角の丸めの前の三角形（芯）の頂点。丸め（半径 TRIANGLE_ROUND）で外形は幅 62・高さ約 55 になる
+TRIANGLE_ROUND = 3
+TRIANGLE_CORE = [(CENTER, 8.5), (60.0, 8.5 + 56 * math.sqrt(3) / 2), (4.0, 8.5 + 56 * math.sqrt(3) / 2)]
+TRIANGLE_BORDER = 5
+# 三角形の中の黄色の重心（記号はこの辺りに置く）と、記号に使える高さの目安
+TRIANGLE_SYMBOL_Y = 41
+TRIANGLE_SYMBOL_SIZE = 26
 
 
-def triangle_half_width(row):
-    """正三角形の row 行目（頂点が 0）の、中心の列から左右に広がるピクセル数。"""
-    return round(row * CENTER / (TRIANGLE_ROWS - 1))
+def warning_triangle():
+    """警告の形: (黒い外形, 黄の中)。角の丸い正三角形で、黒枠の太さは TRIANGLE_BORDER。"""
+    distance = polygon_distance(TRIANGLE_CORE)
+    outer = Shape(lambda x, y: distance(x, y) <= TRIANGLE_ROUND)
+    inner = Shape(lambda x, y: distance(x, y) <= TRIANGLE_ROUND - TRIANGLE_BORDER)
+    return outer, inner
 
 
-def warning_triangle(image, fill=YELLOW, border=BLACK, side=2, bottom=2):
-    """警告の形: 黄の正三角形に黒枠。31 ピクセル幅で、頂点は 1 ピクセル。
+DISC_RADIUS = 31
+RING_INNER = 25
 
-    枠の太さは、斜めの辺で横に side ピクセル、底辺で bottom 行（斜めの辺と見た目の太さが揃う値）。
+
+def disc(radius=DISC_RADIUS):
+    """丸い標識の円（禁止の白地・指示の青）。既定は幅 62。"""
+    return circle(CENTER, CENTER, radius)
+
+
+def ring(outer=DISC_RADIUS, inner=RING_INNER):
+    """禁止の赤い輪（太さ 6）。"""
+    return annulus(CENTER, CENTER, outer, inner)
+
+
+def slash(half=2.75, radius=RING_INNER + 0.5):
+    """禁止の斜線: 左上から右下へ（45°）。輪の内側だけ。"""
+    def inside(x, y):
+        return abs((x - CENTER) - (y - CENTER)) <= half * math.sqrt(2) and \
+            (x - CENTER) ** 2 + (y - CENTER) ** 2 <= radius * radius
+    return Shape(inside)
+
+
+def square():
+    """安全状態・防火の四角（角を少し丸めた 62 角）。"""
+    return rounded_rect(1, 1, UNITS - 1, UNITS - 1, 4)
+
+
+# ---- 記号: 人物 ----
+# 人物は関節の位置（骨組み）を決めて、頭は円、胴は太さの変わる線、手足は太線でつなぐ。
+# 横向きの姿は右向き。手前の腕と脚の周りは細く抜いて、奥の手足・胴との境目が見えるようにする。
+# 骨組みの単位は、立った姿の高さを 46 にしたもの。
+
+PERSON_HEIGHT = 46
+HEAD_R = 4.8
+ARM_R = 2.6
+LEG_R = 3.1
+FOOT_R = 2.1
+
+
+def _limb(points, r):
+    return polyline(points, r)
+
+
+def _figure(head, torso, far, near):
+    """横向きの人物: 奥の手足 → 胴と頭 → 手前の手足の順に重ねる。
+
+    奥の手足は胴の周りを抜いて離す。手前の腕は胴と重なる所で境目を付けると線が散らかるので、胴と同じ層にする。
+    手前の脚（far / near の最後の 2 つ: 脚と足）は奥の脚との境目を抜く。
     """
-    for row in range(TRIANGLE_ROWS):
-        y = TRIANGLE_TOP + row
-        half = triangle_half_width(row)
-        for x in range(CENTER - half, CENTER + half + 1):
-            inner = half - side
-            in_fill = abs(x - CENTER) <= inner and row < TRIANGLE_ROWS - bottom
-            image.putpixel((x, y), fill if in_fill else border)
+    body = union(circle(*head, HEAD_R), torso, near[0])
+    return layered(union(*far), body, union(*near[1:]), gap=1.0)
 
 
-def in_circle(dx, dy, radius):
-    """中心からのずれ (dx, dy) のピクセルが、半径 radius（整数）の円の内側か。
-
-    d² ≤ r² + r は、ドット絵の円が上下左右で 1 ピクセルだけ飛び出さない、丸く見える境目。
-    """
-    return dx * dx + dy * dy <= radius * radius + radius
-
-
-def disc(image, color, radius=15, cx=CENTER, cy=CENTER):
-    """円。既定は 31 ピクセル幅。"""
-    fill_where(image, lambda x, y: in_circle(x - cx, y - cy, radius), color)
+def person_standing():
+    """立つ人（正面）。腕は体から少し離して下ろし、脚は少し開く。"""
+    head = circle(0, -18.2, HEAD_R)
+    torso = rounded_rect(-6.2, -11.6, 6.2, 5.5, 2.6)
+    arms = union(*(capsule((side * 9.4, -9.2), (side * 10.8, 5.0), ARM_R) for side in (-1, 1)))
+    legs = union(*(capsule((side * 3.6, 4.0), (side * 4.0, 20.4), 2.75) for side in (-1, 1)))
+    return union(head, torso, arms, legs)
 
 
-def ring(image, color, outer=15, inner=12, cx=CENTER, cy=CENTER):
-    """輪（禁止の赤い円）。太さは outer - inner ピクセル。"""
-    fill_where(image, lambda x, y: in_circle(x - cx, y - cy, outer) and not in_circle(x - cx, y - cy, inner), color)
+def person_walking():
+    """歩く人（右向き）。"""
+    shoulder, hip = (0.6, -9.6), (-0.4, 3.2)
+    return _figure(
+        head=(2.2, -18.2),
+        torso=tapered(shoulder, hip, 4.4, 3.8),
+        far=[_limb([shoulder, (-3.6, -2.6), (-6.4, 3.8)], ARM_R),
+             _limb([hip, (-3.4, 11.6), (-7.6, 19.4)], LEG_R),
+             capsule((-7.6, 19.4), (-5.4, 21.4), FOOT_R)],
+        near=[_limb([shoulder, (4.4, -2.4), (8.4, 2.6)], ARM_R),
+              _limb([hip, (3.8, 11.8), (5.0, 20.4)], LEG_R),
+              capsule((5.0, 20.4), (8.6, 21.0), FOOT_R)],
+    )
 
 
-def slash(image, color, half=1, radius=12, cx=CENTER, cy=CENTER):
-    """禁止の斜線: 左上から右下へ。輪の内側だけに描く（1 行あたり 2 × half + 1 ピクセル）。"""
-    fill_where(image, lambda x, y: abs((x - cx) - (y - cy)) <= half and in_circle(x - cx, y - cy, radius), color)
+def person_running():
+    """走る人（右向き）。体を前に倒し、腕を曲げて大きく振る。"""
+    shoulder, hip = (3.4, -9.4), (-1.4, 2.8)
+    return _figure(
+        head=(6.2, -17.4),
+        torso=tapered(shoulder, hip, 4.4, 3.8),
+        far=[_limb([shoulder, (-2.6, -4.0), (-7.2, 0.4)], ARM_R),
+             _limb([hip, (-6.0, 10.0), (-12.4, 12.4)], LEG_R),
+             capsule((-12.4, 12.4), (-13.4, 15.6), FOOT_R)],
+        near=[_limb([shoulder, (8.0, -2.8), (12.6, -7.0)], ARM_R),
+              _limb([hip, (7.4, 7.8), (7.2, 18.6)], LEG_R),
+              capsule((7.2, 18.6), (11.0, 19.4), FOOT_R)],
+    )
 
 
-# ---- 記号 ----
+def person_crouching():
+    """かがむ人（右向き）。腰を落として膝を前に出し、背を丸めて手を膝の先へ伸ばす。足の裏は立つ人と同じ高さ。"""
+    shoulder, hip = (3.6, -2.4), (-5.4, 8.0)
+    return _figure(
+        head=(7.4, -9.6),
+        torso=tapered(shoulder, hip, 4.4, 4.0),
+        far=[_limb([hip, (2.4, 12.4), (-2.6, 20.0)], LEG_R),
+             capsule((-2.6, 20.0), (0.8, 21.0), FOOT_R)],
+        near=[_limb([shoulder, (8.8, 3.6), (12.6, 8.4)], ARM_R),
+              _limb([hip, (5.6, 9.6), (3.4, 19.6)], LEG_R),
+              capsule((3.4, 19.6), (7.2, 21.0), FOOT_R)],
+    )
 
 
-def exclamation(image, cx, top, color):
-    """感嘆符（一般警告）。縦棒は下へ向かって細くなる。"""
-    dots_centered(image, [
-        "###",
-        "###",
-        "###",
-        "###",
-        "###",
-        "###",
-        "###",
-        "###",
-        ".#.",
-        ".#.",
-        "...",
-        "###",
-        "###",
-    ], cx, top, color)
+POSES = {"standing": person_standing, "walking": person_walking, "running": person_running,
+         "crouching": person_crouching}
 
 
-def trefoil(image, cx, cy, color, dot=1.5, blade_in=2.5, blade_out=6.6):
-    """放射線マーク: 中心の点と 3 枚の羽根（下・左上・右上、各 60°）。"""
+def person(cx, cy, size, pose="standing", mirror=False):
+    """人物。pose は standing / walking / running / crouching。cy は立った姿の高さの中心（姿が変わっても足元は揃う）。"""
+    return place(POSES[pose](), PERSON_HEIGHT, cx, cy, size, mirror)
+
+
+def coverall_person(cx, cy, size):
+    """防護服（つなぎ）を着た人（正面）。胴と脚を一続きの服にし、腕は体から離す。
+    襟元・袖口・ベルト・長靴の上端の境目を細く抜く。"""
+    suit = union(rounded_rect(-7.4, -11.8, 7.4, 8.0, 2.8),
+                 rounded_rect(-7.4, 4.0, -0.9, 21.0, 1.4),
+                 rounded_rect(0.9, 4.0, 7.4, 21.0, 1.4))
+    head = circle(0, -18.2, HEAD_R)
+    arms = union(*(capsule((side * 10.4, -9.4), (side * 12.2, 5.6), 2.6) for side in (-1, 1)))
+    # 袖口・ベルト・長靴の上端の境目（服の色を細く抜く）
+    seams = union(rect(-14.0, 2.6, -8.0, 3.6), rect(8.0, 2.6, 14.0, 3.6),
+                  rect(-7.4, 0.4, 7.4, 1.4), rect(-7.4, 16.0, 7.4, 17.0))
+    collar = polygon([(-3.4, -11.8), (3.4, -11.8), (0.0, -7.4)])
+    shape = union(head, suit - collar, arms) - seams
+    return place(shape, PERSON_HEIGHT, cx, cy, size)
+
+
+# ---- 記号: 体の一部 ----
+
+HAND_HEIGHT = 40
+
+
+def hand_shape():
+    """開いた手のひら（正面、指は上向き、親指は左）。原点の中心で高さ 40。"""
+    palm = rounded_rect(-9.4, -3.0, 9.4, 13.0, 4.2)
+    wrist = rect(-7.0, 10.0, 7.0, 20.0)
+    fingers = union(capsule((-7.2, -2.0), (-7.4, -12.4), 2.0),
+                    capsule((-2.4, -2.0), (-2.4, -17.0), 2.0),
+                    capsule((2.4, -2.0), (2.6, -15.4), 2.0),
+                    capsule((7.2, -2.0), (7.6, -10.0), 1.9))
+    thumb = union(polyline([(-7.0, 10.0), (-12.0, 4.2), (-14.0, -1.6)], 2.6), circle(-7.4, 7.0, 3.6))
+    return layered(union(palm, wrist, fingers), thumb, gap=1.0)
+
+
+def hand(cx, cy, size, mirror=False):
+    """開いた手のひら（触るな・手の保護など）。mirror で親指が右になる。"""
+    return place(hand_shape(), HAND_HEIGHT, cx, cy, size, mirror)
+
+
+HEAD_HEIGHT = 40
+# 頭部の基準の位置（原点が中心、高さ 40）。保護具（ヘルメット・ゴーグル・耳覆い・マスク）はこの位置に合わせて描く
+HEAD_ANCHORS = {
+    "crown": (0.0, -19.0),   # 頭のてっぺん（ヘルメットの上端の目安）
+    "brow": (0.0, -9.0),     # 眉の高さ（ヘルメットのつば・ゴーグルの上端）
+    "eyes": (0.0, -5.0),     # 目の高さ（ゴーグル・保護めがね）
+    "ears": (9.6, -3.0),     # 右の耳の中心（左は x を反転。耳覆い）
+    "mouth": (0.0, 4.0),     # 口の高さ（マスク）
+    "chin": (0.0, 9.0),      # あごの下
+}
+
+
+def head_shape():
+    """頭部と肩（正面の胸像）。顔の中は描かず、保護具を重ねる前提の無地の形。原点の中心で高さ 40。"""
+    face = ellipse(0, -5.0, 9.0, 14.0)
+    ears = union(ellipse(-9.6, -3.0, 1.8, 3.4), ellipse(9.6, -3.0, 1.8, 3.4))
+    neck = rect(-4.4, 6.0, 4.4, 13.0)
+    shoulders = union(rounded_rect(-17.0, 12.4, 17.0, 26.0, 6.0)) & rect(-17.0, 12.4, 17.0, 21.0)
+    return union(layered(union(neck, shoulders), face, gap=1.2), ears)
+
+
+def head(cx, cy, size):
+    """頭部（保護具を付ける前提）。保護具の位置は head_anchor で求める。"""
+    return place(head_shape(), HEAD_HEIGHT, cx, cy, size)
+
+
+def head_anchor(name, cx, cy, size, side=1):
+    """頭部の基準の位置（HEAD_ANCHORS）を、head(cx, cy, size) と同じ置き方で設計の座標に直す。side=-1 で左。"""
+    x, y = HEAD_ANCHORS[name]
+    factor = size / HEAD_HEIGHT
+    return cx + side * x * factor, cy + y * factor
+
+
+def wear(base, gear, gap=1.2):
+    """base（頭部・人物）に保護具 gear を重ねる。gear の周りを gap だけ抜いて、境目を見せる。"""
+    return layered(base, gear, gap=gap)
+
+
+# ---- 記号: そのほか ----
+
+def arrow(cx, cy, length, angle=0, width=6.0, head_length=None, head_width=None):
+    """矢印（中心 (cx, cy)、全長 length）。angle は向き（度。右が 0 で時計回り）。"""
+    head_length = head_length or length * 0.42
+    head_width = head_width or width * 2.6
+    half = length / 2
+    shaft = rect(-half, -width / 2, half - head_length + 0.5, width / 2)
+    tip = polygon([(half - head_length, -head_width / 2), (half, 0), (half - head_length, head_width / 2)])
+    return (shaft | tip).rotate(angle, 0, 0).shift(cx, cy)
+
+
+FLAME_HEIGHT = 34
+
+
+def flame_shape():
+    """炎（原点の中心で高さ 34）。丸い根元から左上へなびく先と、右の小さな舌、中の抜き。"""
+    outer = union(circle(0.0, 8.0, 9.0),
+                  polygon([(-9.0, 8.0), (-8.4, 0.0), (-5.6, -6.0), (-2.4, -11.4), (-1.6, -17.0),
+                           (2.6, -12.0), (4.6, -6.0), (6.4, -2.0), (9.0, 8.0)]),
+                  polygon([(4.6, -3.0), (8.6, -9.4), (10.4, -3.0), (9.0, 6.0)]))
+    inner = union(circle(0.4, 11.4, 4.4),
+                  polygon([(-4.0, 11.4), (-3.2, 6.0), (-1.0, 1.0), (0.2, -4.2), (2.6, 2.0), (4.4, 6.4), (4.8, 11.4)]))
+    return outer - inner
+
+
+def flame(cx, cy, size):
+    """炎（可燃物・火気厳禁など）。"""
+    return place(flame_shape(), FLAME_HEIGHT, cx, cy, size)
+
+
+LIGHTNING_HEIGHT = 40
+
+
+def lightning_shape():
+    """稲妻（原点の中心で高さ 40）。右上から左下へ 2 回折れ、先は左下を向いた矢じり。"""
+    bolt = polygon([(2.0, -20.0), (9.6, -20.0), (3.4, -5.6), (9.4, -5.6), (-2.0, 9.2),
+                    (-5.0, 7.0), (2.0, -1.6), (-4.4, -1.6)])
+    tip = polygon([(-8.8, 3.8), (2.0, 11.6), (-9.6, 20.0)])
+    return bolt | tip
+
+
+def lightning(cx, cy, size, mirror=False):
+    """稲妻（感電注意・高電圧など）。"""
+    return place(lightning_shape(), LIGHTNING_HEIGHT, cx, cy, size, mirror)
+
+
+def droplet(cx, cy, size):
+    """しずく（液体・水など）。下が丸く、上がとがる。size は高さ。"""
+    r = size * 0.32
+    bottom = cy + size / 2
+    ccy = bottom - r
+    tip_y = cy - size / 2
+    # とがった先から円に引いた接線の接点
+    d = ccy - tip_y
+    angle = math.asin(r / d)
+    tx = r * math.cos(angle)
+    ty = ccy - r * math.sin(angle)
+    return circle(cx, ccy, r) | polygon([(cx, tip_y), (cx + tx, ty), (cx - tx, ty)])
+
+
+def gear(cx, cy, size, teeth=8, hole=0.36):
+    """歯車（機械・回転する部品など）。size は歯先の直径。hole は穴の直径の割合（0 で穴なし）。"""
+    outer = size / 2
+    root = outer * 0.76
+
     def inside(x, y):
         dx, dy = x - cx, y - cy
         r = math.hypot(dx, dy)
-        if r <= dot:
+        if r <= root:
             return True
-        if not blade_in <= r <= blade_out:
+        if r > outer:
             return False
-        # 下向きを 0° にした角度。羽根は 0°・120°・240° を中心に ±30°
-        angle = math.degrees(math.atan2(dx, dy)) % 120
-        return angle < 30 or angle > 90
-    fill_where(image, inside, color)
+        # 歯は、歯の中心からの角度だけでなく弦の長さで決める（歯の側面が平行に近くなる）
+        pitch = 2 * math.pi / teeth
+        a = (math.atan2(dy, dx) + pitch / 2) % pitch - pitch / 2
+        return abs(r * math.sin(a)) <= outer * 0.22
+    body = Shape(inside)
+    return body - circle(cx, cy, outer * hole) if hole else body
 
 
-def explosion(image, cx, top, color):
-    """爆発: 弾けた玉と、周りに飛ぶ破片。"""
-    dots_centered(image, [
-        "......#......",
-        "..#.......#..",
-        ".....###.....",
-        "....#####....",
-        "#..#######..#",
-        "...#######...",
-        "#..#######..#",
-        "....#####....",
-        ".....###.....",
-        "..#.......#..",
-        "......#......",
-    ], cx, top, color)
+def waves(cx, cy, width, count=3, spacing=6.0, amplitude=1.6, wavelength=10.0, r=1.4):
+    """横に流れる波を count 本、縦に並べる（水・液体など）。"""
+    top = cy - spacing * (count - 1) / 2
+    return union(*(sine_band(cx - width / 2, cx + width / 2, top + i * spacing, amplitude, wavelength, r)
+                   for i in range(count)))
 
 
-def lightning(image, cx, top, color):
-    """稲妻（感電注意）: 右上から左下へ折れ、先が左下を向いた矢じりになる。"""
-    dots_centered(image, [
-        ".....###.",
-        "....###..",
-        "...###...",
-        "..###....",
-        ".########",
-        ".....###.",
-        "....###..",
-        "#..###...",
-        "#.###....",
-        "####.....",
-        "###......",
-        "####.....",
-        "#####....",
-    ], cx, top, color)
+def rising_waves(cx, bottom, height, count=3, spacing=7.0, amplitude=1.8, wavelength=11.0, r=1.5):
+    """縦に立ちのぼる波を count 本、横に並べる（熱・蒸気など）。"""
+    left = cx - spacing * (count - 1) / 2
+    return union(*(sine_band(bottom, bottom - height, left + i * spacing, amplitude, wavelength, r, vertical=True)
+                   for i in range(count)))
 
 
-def heat(image, cx, top, color):
-    """高温の面: 平らな面と、そこから立ちのぼる 3 本の波線。"""
-    dots_centered(image, [
-        ".##..##..##..",
-        "##..##..##...",
-        "##..##..##...",
-        ".##..##..##..",
-        "..##..##..##.",
-        "..##..##..##.",
-        ".##..##..##..",
-        ".............",
-        "#############",
-        "#############",
-    ], cx, top, color)
+# ---- 記号: 警告の図柄に使うもの ----
+
+def exclamation(cx, cy, size):
+    """感嘆符（一般警告）。縦棒は下へ向かって細くなり、上は丸い。"""
+    s = size / 26
+    bar = tapered((cx, cy - 10.4 * s), (cx, cy + 4.6 * s), 3.2 * s, 2.2 * s)
+    dot = circle(cx, cy + 10.4 * s, 2.6 * s)
+    return bar | dot
 
 
-def flame(image, cx, top, color):
-    """炎（可燃物など。MVP の 8 種では使わない）。"""
-    dots_centered(image, [
-        "....#....",
-        "....##...",
-        "...###...",
-        "...####..",
-        "..#####..",
-        "..##.###.",
-        ".###.###.",
-        ".##...##.",
-        "###...###",
-        "##.....##",
-        ".##...##.",
-        "..#####..",
-    ], cx, top, color)
+def trefoil(cx, cy, size):
+    """放射線マーク: 中心の点と 3 枚の羽根（下・左上・右上、各 60°）。size は羽根の外の直径。"""
+    outer = size / 2
+    dot = circle(cx, cy, outer * 0.2)
+    return dot | arc_band(cx, cy, outer, outer * 0.32, 150, 210) | arc_band(cx, cy, outer, outer * 0.32, 270, 330) \
+        | arc_band(cx, cy, outer, outer * 0.32, 30, 90)
 
 
-def hand(image, cx, top, color):
-    """開いた手のひら（触るな）。指は上向き、親指は左。"""
-    dots_centered(image, [
-        ".....#.......",
-        "...#.##.#....",
-        "...##.#.##...",
-        "...##.#.##.#.",
-        "...##.#.##.##",
-        "...##.#.##.##",
-        "...########..",
-        "#..########.#",
-        "##.#########.",
-        ".###########.",
-        "..##########.",
-        "..#########..",
-        "...#######...",
-        "...#######...",
-    ], cx, top, color)
+def explosion(cx, cy, size):
+    """爆発: 弾けた玉（ぎざぎざの塊）と、周りへ飛ぶ破片。size は全体の高さ。"""
+    s = size / 28
+    spikes = []
+    for i in range(16):
+        angle = math.radians(i * 22.5 + 11.25)
+        radius = (9.0 if i % 2 == 0 else 5.6) * s
+        spikes.append((cx + radius * math.sin(angle), cy - radius * math.cos(angle)))
+    burst = polygon(spikes)
+    fragments = []
+    for angle, distance, length in [(45, 10.2, 3.4), (100, 10.0, 3.2), (180, 10.4, 3.2),
+                                    (260, 10.0, 3.2), (315, 10.2, 3.4)]:
+        a = math.radians(angle)
+        dx, dy = math.sin(a), -math.cos(a)
+        start = (cx + dx * distance * s, cy + dy * distance * s)
+        end = (cx + dx * (distance + length) * s, cy + dy * (distance + length) * s)
+        fragments.append(tapered(start, end, 1.3 * s, 2.1 * s))
+    return burst | union(*fragments)
 
 
-def walking_person(image, cx, top, color):
-    """歩く人（通行禁止）。右へ歩く向き。"""
-    dots_centered(image, [
-        "......###....",
-        ".....#####...",
-        ".....#####...",
-        "......###....",
-        ".....####....",
-        "....######...",
-        "...#######...",
-        "..##.######..",
-        ".##..####.##.",
-        "##...####..##",
-        ".....####....",
-        ".....#####...",
-        "....###.##...",
-        "...###...##..",
-        "..###.....##.",
-        ".###......##.",
-        "###.......###",
-    ], cx, top, color)
+def hot_surface(cx, cy, size):
+    """高温の面: 平らな面と、そこから立ちのぼる 3 本の波線。size は全体の高さ。"""
+    s = size / 26
+    surface = rect(cx - 11 * s, cy + 8.6 * s, cx + 11 * s, cy + 12.6 * s)
+    return surface | rising_waves(cx, cy + 6.0 * s, 16.0 * s, spacing=7.6 * s, amplitude=1.9 * s,
+                                  wavelength=12.0 * s, r=1.5 * s)
 
 
-def coverall_person(image, cx, top, color):
-    """防護服（つなぎ）を着た人（防護服着用）。腕を少し開いて立つ正面の姿。"""
-    dots_centered(image, [
-        "....###....",
-        "...#####...",
-        "...#####...",
-        "....###....",
-        "...........",
-        "..###.###..",
-        ".####.####.",
-        ".####.####.",
-        ".##.#.#.##.",
-        ".##.#.#.##.",
-        ".##.###.##.",
-        "##..###..##",
-        "....###....",
-        "...##.##...",
-        "...##.##...",
-        "...##.##...",
-        "...##.##...",
-        "..###.###..",
-    ], cx, top, color)
+# 部品の一覧画像（doc/textures/parts.png）に並べる部品: (見出し, 図形)。設計の座標の中心に高さ 44 前後で置く
+def catalog():
+    c = CENTER
+    return [
+        ("person: standing", person(c, c, 48)),
+        ("person: walking", person(c, c, 48, "walking")),
+        ("person: running", person(c, c, 48, "running")),
+        ("person: crouching", person(c, c, 48, "crouching")),
+        ("coverall person", coverall_person(c, c + 2, 48)),
+        ("hand", hand(c, c, 46)),
+        ("head (for gear)", head(c, c, 44)),
+        ("head + helmet (example)", wear(head(c, c, 44),
+                                        (ellipse(c, head_anchor("brow", c, c, 44)[1] - 1, 11.6, 11.4)
+                                         & rect(0, 0, UNITS, head_anchor("brow", c, c, 44)[1]))
+                                        | rect(c - 14, head_anchor("brow", c, c, 44)[1] - 2.6,
+                                               c + 14, head_anchor("brow", c, c, 44)[1]))),
+        ("arrow", arrow(c, c, 46)),
+        ("arrow (up)", arrow(c, c, 46, angle=-90)),
+        ("flame", flame(c, c, 44)),
+        ("lightning", lightning(c, c, 44)),
+        ("droplet", droplet(c, c, 40)),
+        ("gear", gear(c, c, 44)),
+        ("waves", waves(c, c, 46)),
+        ("rising waves", rising_waves(c, c + 16, 32)),
+        ("exclamation", exclamation(c, c, 40)),
+        ("trefoil", trefoil(c, c, 44)),
+        ("explosion", explosion(c, c, 44)),
+        ("hot surface", hot_surface(c, c, 40)),
+    ]
