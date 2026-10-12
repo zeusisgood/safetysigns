@@ -32,5 +32,8 @@
       "Read(./.env.*)",
       "Read(**/.env)"
     ]
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": true
   }
 }
