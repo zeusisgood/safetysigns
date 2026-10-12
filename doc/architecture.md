@@ -10,6 +10,7 @@
 - 図柄の一覧（定義ファイル）はクライアントだけが読む。サーバーは ID の文字列を保存・同期し、届いた ID の形と距離を確かめるだけ（[ADR 0002](adr/0002-load-sign-definitions-on-texture-stitch.md)）。
 - 看板は 1 マス以上を使う（壁掛け 1×1・2×2、ポール付き）。図柄は代表のマス（正面から見て左下。ポール付きは最下段の支柱）の TileEntity だけが持ち、ほかのマスは部品の番号だけを状態に持つ（[ADR 0004](adr/0004-multiblock-signs-with-a-representative-cell.md)、[ADR 0005](adr/0005-pole-sign-keeps-the-pattern-in-the-pole-cell.md)、[`diagrams/multiblock.md`](diagrams/multiblock.md)）。
 - 見た目: 看板の板は、代表のマスの TileEntity の描画（`SignRenderer`）が、図柄を描く面（ブロックの `getFaceRow`・`getFaceZ`。壁掛けは看板全体、ポール付きは最上段の板）に描く。切り抜き ON は図柄のテクスチャの形、OFF は四角い板で、無地の下地の上に図柄を重ねる。裏は銀なら灰色、図柄なら表と同じ図柄を左右反転して貼る。縁はいつも灰色（形は `common/SignOutline` がテクスチャのアルファから作る。組み立てた板はテクスチャ・看板の種類・切り抜き・裏面ごとにディスプレイリストに取っておき、テクスチャを貼り直したら作り直す。[ADR 0006](adr/0006-draw-the-plate-cut-to-the-pattern-shape.md)）。リストは 2 つ続きで、1 つ目が下地・裏・縁、2 つ目が表の図柄。夜間に光る看板は、2 つ目だけをライトマップの最大（240, 240）で描く（周りは照らさない。下地・裏・縁・ポール・金具は周りの明るさ）。クライアントの全体設定（`@Config`）はない。ブロックモデル（JSON）は板を持たない（壁掛けは何も描かない。ポール付きは支柱と固定金具）。アイテムは `SignItemModel` が NBT に合わせて差し替える（切り抜き ON は図柄のテクスチャ 1 枚、OFF は無地の下地 + 図柄の 2 枚重ね。裏面はアイコンに出さない）。
+- テクスチャ（図柄・無地・「?」・裏・支柱）は `tools/texgen/` のスクリプトが作り、PNG をコミットする（ビルドに Python は要らない）。図柄は標識の形と記号の部品の組み合わせで描き、`tools/texgen/manual/` に置いた手の仕上げを優先する（[ADR 0009](adr/0009-generate-textures-from-parts-with-manual-overrides.md)、[`diagrams/texture-generation.md`](diagrams/texture-generation.md)、手順は [`development.md`](development.md)）。
 
 | パッケージ / ファイル | 役割 | 動く場所 |
 |---|---|---|
