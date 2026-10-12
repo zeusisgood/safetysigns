@@ -5,7 +5,7 @@
 - 図柄は `SIGNS` に「標識の形（`warning` / `prohibition` / `mandatory`）＋記号の部品（`parts.py`）」で定義する。
 - `tools/texgen/manual/<名前>.png` があれば、その図柄は生成せず、手で仕上げたファイルをそのままコピーする（`SIGNS` にない名前も出力する）。
 - 生成した図柄は、決めた色と透明以外のピクセルがあれば止まる。手で仕上げた図柄は警告だけ出して使う（32×32 でなければ止まる）。
-- 一覧画像の見出し（コードと英語の名前）は、jar に入る定義ファイル `signs.json` から読む。
+- 一覧画像には図柄と、無地・「?」を並べる（裏と支柱は図柄ではないので入れない）。見出し（コードと英語の名前）は、jar に入る定義ファイル `signs.json` から読む。
 
 ```mermaid
 flowchart TD
@@ -21,5 +21,5 @@ flowchart TD
     Run --> Blocks["無地・「?」・裏・支柱<br/>textures/blocks/"]
     Defs["signs.json<br/>コードと英語の名前"] --> Preview
     Save --> Preview["doc/textures/preview.png<br/>8 倍・見出し付き"]
-    Blocks --> Preview
+    Blocks -- 無地と「?」だけ --> Preview
 ```

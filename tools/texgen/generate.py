@@ -220,7 +220,7 @@ def main():
         image.save(TEXTURES / "signs" / f"{name}.png")
         code, english = names.get(name, (name.upper(), ""))
         if source == "manual":
-            english += " (manual)"
+            english = f"{english} (manual)".strip()
         entries.append((code, english, image))
         print(f"{name}: {source}")
 

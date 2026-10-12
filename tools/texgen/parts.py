@@ -100,6 +100,7 @@ def slash(image, color, half=1, radius=12, cx=CENTER, cy=CENTER):
 
 # ---- 記号 ----
 
+
 def exclamation(image, cx, top, color):
     """感嘆符（一般警告）。縦棒は下へ向かって細くなる。"""
     dots_centered(image, [
@@ -132,6 +133,7 @@ def trefoil(image, cx, cy, color, dot=1.5, blade_in=2.5, blade_out=6.6):
         angle = math.degrees(math.atan2(dx, dy)) % 120
         return angle < 30 or angle > 90
     fill_where(image, inside, color)
+
 
 def explosion(image, cx, top, color):
     """爆発: 弾けた玉と、周りに飛ぶ破片。"""
@@ -167,6 +169,7 @@ def lightning(image, cx, top, color):
         "####.....",
         "#####....",
     ], cx, top, color)
+
 
 def heat(image, cx, top, color):
     """高温の面: 平らな面と、そこから立ちのぼる 3 本の波線。"""
@@ -243,6 +246,7 @@ def walking_person(image, cx, top, color):
         ".###......##.",
         "###.......###",
     ], cx, top, color)
+
 
 def coverall_person(image, cx, top, color):
     """防護服（つなぎ）を着た人（防護服着用）。腕を少し開いて立つ正面の姿。"""
