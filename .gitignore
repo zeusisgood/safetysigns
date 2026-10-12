@@ -1,0 +1,32 @@
+# Gradle / ForgeGradle
+.gradle/
+build/
+out/
+run/
+classes/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/*
+!.vscode/extensions.json
+.settings/
+.project
+.classpath
+bin/
+
+# Python（テクスチャ生成）
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 秘密情報
+.env
+.env.*
+!.env.example

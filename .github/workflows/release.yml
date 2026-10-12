@@ -1,0 +1,26 @@
+name: Release
+
+# Claude が Merge 後に付けたタグ (v*) から GitHub Release を作る
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: gradle
+      - name: Build
+        run: ./gradlew build --no-daemon
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: build/libs/safetysigns-*.jar
+          generate_release_notes: true

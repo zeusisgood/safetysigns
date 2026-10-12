@@ -1,0 +1,56 @@
+{
+  "name": "safetysigns (Forge 1.12.2)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "features": {
+    // Forge 1.12.2 は JDK 8 が必須
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "8",
+      "jdkDistro": "tem",
+      "installGradle": false,
+      "installMaven": false
+    },
+    // テクスチャ生成スクリプト（tools/texgen/）用
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": false
+    },
+    // Claude Code の前提
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+  },
+
+  // Gradle キャッシュを名前付きボリュームに保存（weakspot とは共有しない）
+  "mounts": [
+    "source=safetysigns-gradle-cache,target=/home/vscode/.gradle,type=volume"
+  ],
+
+  // テスト用サーバー (runServer) 用
+  "forwardPorts": [25565],
+  "portsAttributes": {
+    "25565": { "label": "Minecraft test server" }
+  },
+
+  "containerEnv": {
+    "GRADLE_OPTS": "-Xmx2g -Dfile.encoding=UTF-8"
+  },
+
+  // ボリュームの所有者を vscode ユーザーに直し、Pillow を入れ、Java のバージョンを表示
+  "postCreateCommand": "sudo chown -R $(id -u):$(id -g) /home/vscode/.gradle && pip install --user Pillow && java -version",
+
+  "remoteUser": "vscode",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "ms-python.python"
+      ],
+      "settings": {
+        "java.import.gradle.enabled": true,
+        "files.encoding": "utf8"
+      }
+    }
+  }
+}
