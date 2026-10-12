@@ -2,8 +2,10 @@ package io.github.zeusisgood.safetysigns.item;
 
 import io.github.zeusisgood.safetysigns.block.BlockSafetySign;
 import io.github.zeusisgood.safetysigns.client.SignTextures;
+import io.github.zeusisgood.safetysigns.common.SignAppearance;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -33,17 +35,17 @@ public class ItemSafetySign extends ItemBlock {
         setRegistryName(block.getRegistryName());
     }
 
-    /** 図柄入りのアイテム（ドロップ・ピックブロック・クラフトの結果）。null は無地（NBT なし）。 */
-    public static ItemStack createStack(Item item, @Nullable String signId) {
+    /** 見た目（図柄・切り抜き・裏面）を持ったアイテム（ドロップ・ピックブロック）。既定の見た目なら NBT なし。 */
+    public static ItemStack createStack(Item item, SignAppearance appearance) {
         ItemStack stack = new ItemStack(item);
-        SignNbt.setSignId(stack, signId);
+        SignNbt.set(stack, appearance);
         return stack;
     }
 
     @Override
     public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing,
             float hitX, float hitY, float hitZ) {
-        // スニーク中はバニラが看板の onBlockActivated を呼ばずにここへ来る。看板なら図柄を写して終わり（設置しない）
+        // スニーク中はバニラが看板の onBlockActivated を呼ばずにここへ来る。看板なら図柄（切り抜き・裏面も）を写して終わり（設置しない）
         // 複数マスの看板は、どのマスを狙っても代表のマスの図柄
         TileEntitySafetySign tile = BlockSafetySign.getSignTile(world, pos);
         if (player.isSneaking() && tile != null) {
@@ -51,7 +53,7 @@ public class ItemSafetySign extends ItemBlock {
                 // 書き換えはサーバーだけ（手のアイテムはバニラの同期でクライアントへ届く）。
                 // 種類・サイズは違ってよい。スタックはまとめて写す（図柄違いはもともとスタックしないため）。
                 // 一覧にない ID もそのまま写す（設置するときに形を確かめる）
-                SignNbt.setSignId(player.getHeldItem(hand), tile.getSignId());
+                SignNbt.set(player.getHeldItem(hand), tile.getAppearance());
             }
             return EnumActionResult.SUCCESS;
         }
@@ -100,7 +102,15 @@ public class ItemSafetySign extends ItemBlock {
     @Override
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, @Nullable World world, List<String> tooltip, ITooltipFlag flag) {
-        // 図柄のコードと名前（一覧にない ID は「?」と ID）
-        tooltip.add(SignTextures.describe(SignNbt.getSignId(stack)));
+        // 図柄のコードと名前（一覧にない ID は「?」と ID）。既定と違う設定だけ 1 行ずつ足す
+        SignAppearance appearance = SignNbt.get(stack);
+        tooltip.add(SignTextures.describe(appearance.getSignId()));
+        // 無地は常に切り抜き ON なので、出るのは図柄のある看板だけ
+        if (!appearance.isCutout()) {
+            tooltip.add(I18n.format("tooltip.safetysigns.no_cutout"));
+        }
+        if (appearance.isBackPattern()) {
+            tooltip.add(I18n.format("tooltip.safetysigns.double_sided"));
+        }
     }
 }

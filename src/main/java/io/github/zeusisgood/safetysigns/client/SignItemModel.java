@@ -1,6 +1,7 @@
 package io.github.zeusisgood.safetysigns.client;
 
 import com.google.common.collect.ImmutableList;
+import io.github.zeusisgood.safetysigns.common.SignAppearance;
 import io.github.zeusisgood.safetysigns.item.SignNbt;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
@@ -22,8 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 看板アイテムのモデル。無地のモデル（item/generated）を包み、NBT の図柄 ID に合わせて
- * 図柄のテクスチャ 1 枚のモデル（置いた看板と同じく、透明な所は板がない）に差し替える。図柄ごとのモデルは初めて使うときに作って取っておく。
+ * 看板アイテムのモデル。無地のモデル（item/generated）を包み、NBT の図柄 ID と切り抜きに合わせて差し替える。
+ * 切り抜き ON は図柄のテクスチャ 1 枚（置いた看板と同じく、透明な所は板がない）、OFF は無地の下地 + 図柄の 2 枚重ね。
+ * 図柄と切り抜きごとのモデルは初めて使うときに作って取っておく。
  */
 public class SignItemModel extends BakedModelWrapper<IBakedModel> {
 
@@ -39,8 +41,8 @@ public class SignItemModel extends BakedModelWrapper<IBakedModel> {
     }
 
     private final class Overrides extends ItemOverrideList {
-        // テクスチャごとのモデル。テクスチャを貼り直すとこのモデルごと作り直されるので、消す必要はない
-        private final Map<ResourceLocation, IBakedModel> cache = new HashMap<>();
+        // テクスチャと切り抜きごとのモデル。テクスチャを貼り直すとこのモデルごと作り直されるので、消す必要はない
+        private final Map<Pair<ResourceLocation, Boolean>, IBakedModel> cache = new HashMap<>();
 
         Overrides() {
             super(Collections.emptyList());
@@ -49,15 +51,20 @@ public class SignItemModel extends BakedModelWrapper<IBakedModel> {
         @Override
         public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack, @Nullable World world,
                 @Nullable EntityLivingBase entity) {
-            String signId = SignNbt.getSignId(stack);
-            if (signId == null) {
+            // 裏面の設定はアイコンに出さない（アイコンは表だけ）。無地は切り抜きの ON/OFF で見た目が変わらない
+            SignAppearance appearance = SignNbt.get(stack);
+            if (appearance.getSignId() == null) {
                 return originalModel;
             }
-            return cache.computeIfAbsent(SignTextures.textureOf(signId), this::bake);
+            return cache.computeIfAbsent(Pair.of(SignTextures.textureOf(appearance.getSignId()), appearance.isCutout()), this::bake);
         }
 
-        private IBakedModel bake(ResourceLocation texture) {
-            IBakedModel layers = new ItemLayerModel(ImmutableList.of(texture))
+        private IBakedModel bake(Pair<ResourceLocation, Boolean> key) {
+            ResourceLocation texture = key.getLeft();
+            // 切り抜き ON は図柄だけ（透明な所はアイコンも抜ける）。OFF は無地の下地の上に図柄を重ねた四角
+            ImmutableList<ResourceLocation> textures = key.getRight()
+                    ? ImmutableList.of(texture) : ImmutableList.of(SignTextures.BLANK, texture);
+            IBakedModel layers = new ItemLayerModel(textures)
                     .bake(TRSRTransformation.identity(), DefaultVertexFormats.ITEM, SignTextures::sprite);
             return new WithBlankTransforms(layers, SignItemModel.this.originalModel);
         }

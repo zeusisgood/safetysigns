@@ -1,5 +1,6 @@
 package io.github.zeusisgood.safetysigns.tile;
 
+import io.github.zeusisgood.safetysigns.common.SignAppearance;
 import io.github.zeusisgood.safetysigns.item.SignNbt;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -10,31 +11,27 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import javax.annotation.Nullable;
-import java.util.Objects;
 
 /**
- * 看板の図柄 ID を持つ TileEntity。図柄がなければ「無地」（NBT にキーを書かない）。
- * サーバーは図柄の一覧を知らないので、ID の文字列をそのまま保存・同期するだけ。
+ * 看板の見た目（図柄 ID・切り抜き・裏面。{@link SignAppearance}）を持つ TileEntity。既定の値は NBT にキーを書かない。
+ * サーバーは図柄の一覧を知らないので、ID の文字列と真偽値をそのまま保存・同期するだけ。
  * 複数マスの看板では、代表のマス（左下）だけが持つ。
  */
 public class TileEntitySafetySign extends TileEntity {
 
-    @Nullable
-    private String signId;
+    private SignAppearance appearance = SignAppearance.DEFAULT;
 
-    @Nullable
-    public String getSignId() {
-        return signId;
+    public SignAppearance getAppearance() {
+        return appearance;
     }
 
-    /** 図柄を変えて、保存とクライアントへの同期を予約する（サーバー側で呼ぶ）。null は無地。 */
-    public void setSignId(@Nullable String signId) {
+    /** 見た目を変えて、保存とクライアントへの同期を予約する（サーバー側で呼ぶ）。 */
+    public void setAppearance(SignAppearance appearance) {
         // 同じ値なら保存も同期もしない（連打で通信を増やさない）
-        if (Objects.equals(this.signId, signId)) {
+        if (this.appearance.equals(appearance)) {
             return;
         }
-        this.signId = signId;
+        this.appearance = appearance;
         markDirty();
         if (world != null && !world.isRemote) {
             IBlockState state = world.getBlockState(pos);
@@ -46,13 +43,13 @@ public class TileEntitySafetySign extends TileEntity {
     public void readFromNBT(NBTTagCompound compound) {
         super.readFromNBT(compound);
         // 一覧にない ID も消さずに持つ（クライアントでは「?」で表示する）
-        signId = SignNbt.readSignId(compound);
+        appearance = SignNbt.read(compound);
     }
 
     @Override
     public NBTTagCompound writeToNBT(NBTTagCompound compound) {
         super.writeToNBT(compound);
-        SignNbt.writeSignId(compound, signId);
+        SignNbt.write(compound, appearance);
         return compound;
     }
 
