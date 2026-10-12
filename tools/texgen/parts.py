@@ -487,16 +487,19 @@ def flame_over_circle(cx, cy, size):
 def gas_cylinder_shape():
     """ガスボンベ（原点の中心で高さ 40 の枠に、横倒しで置く）。
 
-    左が丸い底の長い円筒の胴、右が少し丸い肩 → 細くくびれた首 → 幅のある口金（バルブ）→ 小さな取っ手。
-    胴の上側に白い細い筋を抜いて、円筒の光沢に見せる（爆弾に見えないように）。
-    傾けると縁がぎざぎざになるので、水平に置く。
+    胴は両端が丸い太い円筒（上側に白い光沢の筋）。右端の上に、短い首・口金・小さなハンドルを縦に積む。
+    魚雷に見えないように、端から横へ突き出す部品（羽に見える十字の形）は使わない。傾けると縁がぎざぎざになるので水平に置く。
     """
-    body = rounded_rect(-21.0, -6.4, 0.0, 6.4, 6.4) | rounded_rect(-8.0, -6.4, 7.0, 6.4, 2.6)
-    shine = rect(-15.0, -4.2, 3.0, -3.0)
-    neck = rect(6.0, -2.2, 11.6, 2.2)
-    valve = rounded_rect(11.6, -4.8, 17.0, 4.8, 1.0)
-    handle = rect(17.0, -1.4, 20.4, 1.4)
-    return (body - shine) | neck | valve | handle
+    body = rounded_rect(-17.0, -1.0, 17.0, 13.0, 7.0)
+    shine = rounded_rect(-11.0, 1.8, 4.0, 3.2, 0.7)
+    # 肩の手前の白い帯（ボンベの首輪）
+    collar = rect(7.4, -1.0, 8.6, 13.0)
+    body = body - collar
+    neck = rect(11.4, -4.4, 14.6, 0.5)
+    cap = rounded_rect(10.2, -7.6, 15.8, -4.0, 1.0)
+    # ハンドルは口金の上の小さな輪（バルブの回し手）
+    handle = annulus(13.0, -10.2, 2.6, 1.2)
+    return (body - shine) | neck | cap | handle
 
 
 def gas_cylinder(cx, cy, size):
@@ -505,21 +508,36 @@ def gas_cylinder(cx, cy, size):
 
 
 def corrosion_shape():
-    """腐食性物質（原点の中心で高さ 40）。上の傾いた 2 本の試験管から大きなしずくが落ち、
-    下の左の板と右の手（どちらも単純な形。手は指の境目を 2 本抜き、親指を立てる）がしずくの落ちる所で欠けている。"""
+    """腐食性物質（原点の中心で高さ 40。128×128 で描く前提の細かさ）。
+
+    上に、底を内側に寄せて傾けた試験管 2 本（V の形）。口から落ちるしずくが、下の左の金属板と下の右の手に
+    かかって、かかった所が欠けている。下の 2 つを大きく描く。
+    """
     def tube(closed, mouth):
-        # 試験管: 底は丸く、口は平らに切る（口の先の半平面を抜く）
+        # 試験管: 底は丸く、口は平らに切って縁を少し広げる
         (x0, y0), (x1, y1) = closed, mouth
         dx, dy = x1 - x0, y1 - y0
-        return capsule(closed, mouth, 2.6) - Shape(lambda x, y: (x - x1) * dx + (y - y1) * dy > 0)
-    tubes = tube((-9.2, -11.6), (-4.6, -6.6)) | tube((9.2, -11.6), (4.6, -6.6))
-    # 口の下の大きなしずく
-    drops = union(droplet(-4.6, 0.0, 8.4), droplet(4.6, 0.0, 8.4))
-    bite = union(circle(-4.6, 6.8, 3.0), circle(4.6, 6.8, 3.0))
-    plate = rect(-10.4, 6.8, -0.8, 13.0)
-    fingers = union(rect(7.4, 8.8, 10.4, 9.6), rect(7.4, 10.8, 10.4, 11.6))
-    hand_ = (rounded_rect(0.8, 6.8, 10.4, 13.0, 1.8) - fingers) | capsule((7.4, 7.2), (10.0, 4.6), 1.2)
-    return tubes | drops | ((plate | hand_) - bite)
+        length = math.hypot(dx, dy)
+        ux, uy = dx / length, dy / length
+        body = capsule(closed, mouth, 2.1) - Shape(lambda x, y: (x - x1) * ux + (y - y1) * uy > 0)
+        lip = capsule((x1 - uy * 2.8 - ux * 0.5, y1 + ux * 2.8 - uy * 0.5),
+                      (x1 + uy * 2.8 - ux * 0.5, y1 - ux * 2.8 - uy * 0.5), 0.7)
+        return body | lip
+    tubes = tube((-3.6, -15.4), (-9.2, -9.4)) | tube((3.6, -15.4), (9.2, -9.4))
+    # 口から落ちるしずく（小さいのと大きいの）
+    drops = union(*(droplet(side * 9.8, -5.8, 2.6) | droplet(side * 9.8, -1.4, 5.4) for side in (-1, 1)))
+
+    # 下の左: 金属板。しずくの落ちた所が丸くえぐれ、縁がぎざぎざに溶けている
+    plate = rounded_rect(-13.4, 3.2, -2.4, 10.6, 0.8)
+    plate_bite = circle(-9.8, 3.0, 3.0) | circle(-12.6, 3.2, 1.2) | circle(-7.0, 3.4, 1.1)
+    # 下の右: 手（甲を上に、指は右）。しずくの落ちた所が欠けている
+    palm = rounded_rect(2.0, 3.2, 10.8, 11.0, 2.0)
+    fingers = union(capsule((10.0, 4.4), (14.2, 4.4), 0.9), capsule((10.0, 6.6), (14.8, 6.6), 0.9),
+                    capsule((10.0, 8.8), (14.0, 8.8), 0.9), capsule((9.6, 10.4), (12.6, 10.6), 0.8))
+    thumb = capsule((7.6, 3.6), (10.8, 0.8), 1.0)
+    hand_ = palm | fingers | thumb
+    hand_bite = circle(9.8, 3.0, 3.0) | circle(7.0, 3.4, 1.1)
+    return tubes | drops | (plate - plate_bite) | (hand_ - hand_bite)
 
 
 def corrosion(cx, cy, size):

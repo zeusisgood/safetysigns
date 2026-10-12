@@ -5,18 +5,25 @@
 図柄のテクスチャは `tools/texgen/` のスクリプトで作る（Python 3 + Pillow）。出力の PNG と一覧画像はコミットする。
 
 ```
-python3 tools/texgen/generate.py            # 64×64（既定）
+python3 tools/texgen/generate.py            # 64×64（既定。hires の図柄は 128×128）
 python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 の 2 の累乗）
 ```
 
 | 出力 | 内容 |
 |---|---|
-| `src/main/resources/assets/safetysigns/textures/signs/<名前>.png` | 図柄（64×64、標識の形の外側は透明） |
+| `src/main/resources/assets/safetysigns/textures/signs/<名前>.png` | 図柄（64×64。`hires` の図柄は 128×128。標識の形の外側は透明） |
 | `src/main/resources/assets/safetysigns/textures/blocks/sign_*.png` | 無地・「?」（`--size` の解像度）・裏面・支柱（いつも 16×16） |
-| `doc/textures/preview.png` | 全図柄を拡大して（64 なら 4 倍）、コードと英語の名前を添えた一覧（PR に貼る） |
+| `doc/textures/preview.png` | 全図柄を同じ大きさに拡大して（64 なら 4 倍、128 なら 2 倍）、コードと英語の名前を添えた一覧。基本と違う解像度の図柄は右上に `128x128` の札（PR に貼る） |
 | `doc/textures/parts.png` | 記号の部品だけを白地に黒で並べた一覧（PR に貼る） |
 
 本体の図案は 64 で見て決めている。`--size` を変えても描けるが、32 以下では細い所がつぶれる（コミットするのは 64）。
+
+### 解像度（64 が基本、潰れる図柄だけ 128）
+
+- 図柄は **64×64 が基本**。64×64 で描き直しても細部が潰れて判別しにくい図柄**だけ**、`SIGNS` で `hires(...)` に包んで **128×128**（`--size` の 2 倍）で描く（[SPEC_2026-10-12-8](spec/SPEC_2026-10-12-8.md)）。今は GHS05・ISO 21482。
+- 座標は 0〜64 のまま。128 では 1 単位が 2 ピクセルなので、0.5 単位の細い線・隙間も描ける。地の縁との間隔（1.5 単位）の確かめは同じ。
+- 看板・GUI では解像度が違っても同じ大きさに描かれる（Mod のコードは解像度を問わない）。テクスチャの地図の場所を多く使うので、むやみに増やさない。
+- 一覧画像では、128 の図柄のマスの右上に黄色の札 `128x128` が付く。
 
 | ファイル | 役目 |
 |---|---|
@@ -80,6 +87,7 @@ python3 tools/texgen/generate.py --size 128 # 解像度を変える（16〜512 �
 2. 記号の部品が足りなければ、`tools/texgen/parts.py` に関数を足す（上の「部品」）。
 3. `tools/texgen/generate.py` の `SIGNS` に、`"<名前>": <形>(<部品>(<中心と大きさ>))` を足す。記号を 2 つ以上並べるときは、形の関数に部品を続けて渡す。
 4. `python3 tools/texgen/generate.py` を流して、`doc/textures/preview.png` と `doc/textures/parts.png` を見る。地の縁と記号がくっついていないか（くっつくとスクリプトが止まる）、遠目に何か分かるかを確かめる。
+   - 64×64 で、要素を減らす・大きくするなどして描き直しても判別しにくいときだけ、`"<名前>": hires(<形>(...))` にして 128×128 で描く（上の「解像度」）。
 5. PNG・一覧画像・スクリプトをまとめてコミットする。機能の追加なので版はパッチで上げ、`CHANGELOG.md` に書く。
 
 ### 手で仕上げる
