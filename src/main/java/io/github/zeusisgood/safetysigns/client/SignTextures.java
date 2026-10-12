@@ -139,6 +139,12 @@ public final class SignTextures {
             // コマは幅と同じ高さの正方形（バニラの既定）。.mcmeta のない縦長の静止画は全体を使う
             boolean animated = image.getHeight() > width && image.getHeight() % width == 0 && hasMetadata(resourceManager, file);
             int height = animated ? width : image.getHeight();
+            // 解像度は問わない（板の形はテクスチャの幅・高さに対する割合で描く）。2 の累乗の正方形でないと、
+            // 板が引き伸ばされたり、ブロックのテクスチャ全体のミップマップが下がったりするので、知らせるだけにする
+            if (width != height || Integer.bitCount(width) != 1) {
+                SafetySignsMod.LOGGER.warn("{} is {}x{}; sign textures should be a power-of-two square (16x16, 32x32, 64x64, ...)",
+                        file, width, height);
+            }
             return SignOutline.fromArgb(width, height, image.getRGB(0, 0, width, height, null, 0, width));
         } catch (IOException e) {
             SafetySignsMod.LOGGER.warn("Failed to read the shape of {}", file, e);

@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """看板のテクスチャを生成する（Pillow）。
 
-図柄は「標識の形（警告・禁止・指示）」と「記号の部品（parts.py）」の組み合わせで定義する（SIGNS）。
+図柄は「標識の形（警告・禁止・指示・安全状態・防火）」と「記号の部品（parts.py）」の組み合わせで定義する（SIGNS）。
+部品の形は設計の単位（0〜64）で書き、出力の解像度のマス目に直接ドット絵として塗る（raster.py。縮小はしない）。
 手でドットを打って仕上げた図柄は tools/texgen/manual/<名前>.png に置く。置いた図柄は生成せず、
 そのファイルをそのまま出力にコピーする（スクリプトを流し直しても手の仕上げが消えない）。
 
 図柄のテクスチャは、標識の形の外側を透明にする。看板の板はテクスチャの透明でない所の形に切り抜かれる
 （仕様書 SPEC_2026-10-12-2.md）。
 
-使い方: python3 tools/texgen/generate.py
-出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/preview.png
+使い方: python3 tools/texgen/generate.py [--size 64]
+  --size  図柄・無地・「?」の解像度（16 以上 512 以下の 2 の累乗。既定 64）。裏面と支柱はいつも 16×16
+出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/{preview,parts}.png
 """
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -18,13 +21,16 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 import parts
-from parts import BLACK, BLUE, CENTER, CLEAR, GREEN, RED, SIZE, WHITE, YELLOW
+import raster
+from parts import BLACK, BLUE, CLEAR, GREEN, RED, WHITE, YELLOW
 
 ROOT = Path(__file__).resolve().parents[2]
 TEXTURES = ROOT / "src/main/resources/assets/safetysigns/textures"
 DEFINITIONS = ROOT / "src/main/resources/assets/safetysigns/safetysigns/signs.json"
 MANUAL = Path(__file__).resolve().parent / "manual"
 PREVIEW = ROOT / "doc/textures/preview.png"
+PARTS_PREVIEW = ROOT / "doc/textures/parts.png"
+DEFAULT_SIZE = 64
 
 # 無地の金属板
 PLATE = (0xE4, 0xE6, 0xE8, 255)
@@ -42,66 +48,119 @@ PREVIEW_NOTE = (0xA0, 0xA0, 0xA0, 255)
 
 
 # ---- 標識の形 ----
-# 形ごとに、使ってよい色と描く処理（形 → 記号 → 禁止の輪と斜線）を持つ。記号は (部品, 位置の引数) の並び。
+# 形ごとに、使ってよい色と描く処理（形 → 記号 → 禁止の輪と斜線）を持つ。記号は部品の図形（parts.py）。
+# 記号は、形の中（黄・白・青・緑・赤の地）から SYMBOL_MARGIN 単位より内側に収める（枠や輪にくっつかないように）。
+
+SYMBOL_MARGIN = 1.5
+
+
+def check_margin(symbol, field, grid=128):
+    """記号が、地 field の縁から SYMBOL_MARGIN より内側にあるか確かめる（外れたら止まる）。
+
+    出力の解像度によらず同じ結果になるよう、細かいマス目（grid × grid）の点で確かめる。
+    """
+    unit = raster.UNITS / grid
+    keep_out = raster.dilate(raster.Shape(lambda x, y: not field(x, y)), SYMBOL_MARGIN)
+    for gy in range(grid):
+        for gx in range(grid):
+            x, y = (gx + 0.5) * unit, (gy + 0.5) * unit
+            if symbol(x, y) and keep_out(x, y):
+                raise ValueError(f"記号が地の縁に近すぎる（設計の座標 {x:.1f}, {y:.1f}）")
+
 
 def warning(*symbols):
     """警告（W）: 黄の正三角形に黒枠と黒の記号。"""
     def draw(image):
-        parts.warning_triangle(image)
-        for part, args in symbols:
-            part(image, *args, BLACK)
+        outer, inner = parts.warning_triangle()
+        raster.fill(image, outer, BLACK)
+        raster.fill(image, inner, YELLOW)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, inner)
+        raster.fill(image, symbol, BLACK)
     return {"category": "W", "colors": {YELLOW, BLACK}, "draw": draw}
 
 
 def prohibition(*symbols):
     """禁止（P）: 白地に黒の記号、その上に赤い円と斜線。"""
     def draw(image):
-        parts.disc(image, WHITE)
-        for part, args in symbols:
-            part(image, *args, BLACK)
-        parts.ring(image, RED)
-        parts.slash(image, RED)
+        raster.fill(image, parts.disc(), WHITE)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, parts.disc(parts.RING_INNER))
+        raster.fill(image, symbol, BLACK)
+        raster.fill(image, parts.ring() | parts.slash(), RED)
     return {"category": "P", "colors": {WHITE, RED, BLACK}, "draw": draw}
 
 
 def mandatory(*symbols):
     """指示（M）: 青い円に白の記号。"""
     def draw(image):
-        parts.disc(image, BLUE)
-        for part, args in symbols:
-            part(image, *args, WHITE)
+        raster.fill(image, parts.disc(), BLUE)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, parts.disc())
+        raster.fill(image, symbol, WHITE)
     return {"category": "M", "colors": {BLUE, WHITE}, "draw": draw}
 
 
+def safe_condition(*symbols):
+    """安全状態（E）: 緑の四角に白の記号（仕様書 SPEC_2026-10-12-6.md）。"""
+    def draw(image):
+        raster.fill(image, parts.square(), GREEN)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, parts.square())
+        raster.fill(image, symbol, WHITE)
+    return {"category": "E", "colors": {GREEN, WHITE}, "draw": draw}
+
+
+def fire(*symbols):
+    """防火（F）: 赤の四角に白の記号（仕様書 SPEC_2026-10-12-6.md）。"""
+    def draw(image):
+        raster.fill(image, parts.square(), RED)
+        symbol = raster.union(*symbols)
+        check_margin(symbol, parts.square())
+        raster.fill(image, symbol, WHITE)
+    return {"category": "F", "colors": {RED, WHITE}, "draw": draw}
+
+
 # ---- 図柄の定義 ----
-# キーはテクスチャのファイル名（textures/signs/<キー>.png）。位置の引数は部品ごと（parts.py）。
-# 三角形の記号は、中の黄色の重心より少し下（三角形の上は細いので）に置く。
+# キーはテクスチャのファイル名（textures/signs/<キー>.png）。部品の位置と大きさは設計の単位（0〜64、中心 32）。
+# 三角形の記号は、中の黄色の重心（parts.TRIANGLE_SYMBOL_Y）の辺りに置く。
+# 大きすぎて地の縁に近づくと check_margin で止まるので、止まったら小さくするか位置をずらす。
+
+C = parts.CENTER
+TY = parts.TRIANGLE_SYMBOL_Y
 
 SIGNS = {
-    "w001": warning((parts.exclamation, (CENTER, 13))),
-    "w002": warning((parts.explosion, (CENTER, 15))),
-    "w003": warning((parts.trefoil, (CENTER, 20))),
-    "w012": warning((parts.lightning, (CENTER, 14))),
-    "w017": warning((parts.heat, (CENTER, 17))),
-    "m010": mandatory((parts.coverall_person, (CENTER, 6))),
-    "p004": prohibition((parts.walking_person, (CENTER, 6))),
-    "p010": prohibition((parts.hand, (CENTER, 8))),
+    "w001": warning(parts.exclamation(C, TY - 2, 29)),
+    "w002": warning(parts.explosion(C, TY - 0.5, 23)),
+    "w003": warning(parts.trefoil(C, TY - 0.5, 25)),
+    "w012": warning(parts.lightning(C, TY - 1, 27)),
+    "w017": warning(parts.hot_surface(C, TY + 0.5, 23)),
+    "m010": mandatory(parts.coverall_person(C, C + 0.5, 48)),
+    "p004": prohibition(parts.person(C - 0.5, C, 44, "walking")),
+    "p010": prohibition(parts.hand(C + 1, C + 0.5, 42)),
 }
 
 
 def check_colors(name, image, allowed):
     """決めた色と透明以外のピクセル（中間色・半透明）がないか確かめる。"""
     allowed = allowed | {CLEAR}
-    stray = {color for _, color in image.getcolors(SIZE * SIZE) if color not in allowed}
+    stray = {color for _, color in image.getcolors(image.width * image.height) if color not in allowed}
     if stray:
         raise SystemExit(f"{name}: 決めた色以外のピクセルがある: {sorted(stray)[:5]}")
 
 
-def load_manual(name, allowed):
-    """手で仕上げた図柄を読む。大きさが違えば止め、色が外れていれば警告だけ出して使う。"""
+def is_power_of_two(n):
+    return n > 0 and n & (n - 1) == 0
+
+
+def load_manual(name, allowed, size):
+    """手で仕上げた図柄を読む。2 の累乗の正方形でなければ止め、解像度が size と違えば・色が外れていれば警告だけ出して使う。"""
     image = Image.open(MANUAL / f"{name}.png").convert("RGBA")
-    if image.size != (SIZE, SIZE):
-        raise SystemExit(f"manual/{name}.png: 大きさが {image.size}（{SIZE}×{SIZE} にする）")
+    width, height = image.size
+    if width != height or not is_power_of_two(width):
+        raise SystemExit(f"manual/{name}.png: 大きさが {image.size}（2 の累乗の正方形にする）")
+    if width != size:
+        print(f"warning: manual/{name}.png: 解像度が {width}（生成は {size}）", file=sys.stderr)
     try:
         check_colors(f"manual/{name}.png", image, allowed)
     except SystemExit as error:
@@ -109,11 +168,12 @@ def load_manual(name, allowed):
     return image
 
 
-def blank():
-    """無地の前面（看板の板そのもの）。"""
-    image = Image.new("RGBA", (SIZE, SIZE), PLATE)
+def blank(size):
+    """無地の前面（看板の板そのもの）。縁の線は 32 ピクセルあたり 1 ピクセル。"""
+    image = Image.new("RGBA", (size, size), PLATE)
     draw = ImageDraw.Draw(image)
-    draw.rectangle([0, 0, SIZE - 1, SIZE - 1], outline=PLATE_EDGE)
+    for i in range(max(1, size // 32)):
+        draw.rectangle([i, i, size - 1 - i, size - 1 - i], outline=PLATE_EDGE)
     return image
 
 
@@ -132,19 +192,17 @@ def pole():
     return image
 
 
-# 「?」（一覧にない図柄 ID）の 3×5 ドットを 4 倍で描く
-QUESTION = ["###", "..#", ".##", "...", ".#."]
+# 「?」の形（設計の単位）: 黒い四角に、白い鉤と点
+QUESTION = (raster.polyline([(23.0, 23.0), (24.0, 18.0), (27.6, 14.4), (32.0, 13.4), (36.4, 14.4), (40.0, 18.0),
+                             (40.8, 22.6), (39.0, 27.0), (34.6, 30.4), (32.0, 33.6), (32.0, 39.0)], 3.0)
+            | raster.circle(32.0, 48.0, 3.6))
 
 
-def unknown():
+def unknown(size):
     """一覧にない図柄 ID の「?」。"""
-    image = Image.new("RGBA", (SIZE, SIZE), CLEAR)
-    draw = ImageDraw.Draw(image)
-    draw.rectangle([2, 2, 29, 29], fill=BLACK)
-    for row, line in enumerate(QUESTION):
-        for col, dot in enumerate(line):
-            if dot == "#":
-                draw.rectangle([10 + col * 4, 6 + row * 4, 13 + col * 4, 9 + row * 4], fill=WHITE)
+    image = Image.new("RGBA", (size, size), CLEAR)
+    raster.fill(image, raster.rect(4, 4, 60, 60), BLACK)
+    raster.fill(image, QUESTION, WHITE)
     return image
 
 
@@ -172,37 +230,71 @@ def wrap(draw, text, font, width):
     return lines + [line] if line else lines
 
 
-def write_preview(entries):
-    """一覧画像: 8 倍に拡大して暗い背景に並べ、下にコードと名前を書く（透明な所は看板では板がない）。"""
-    scale = 8
-    cell = SIZE * scale
+# 一覧画像の 1 マスの大きさ（ピクセル）。テクスチャは整数倍で拡大する（解像度 64 なら 4 倍）
+PREVIEW_CELL = 256
+
+
+def write_sheet(path, entries, cell_bg=None):
+    """一覧画像: 拡大して暗い背景に並べ、下に見出しと説明を書く。entries は (見出し, 説明, 画像)。
+
+    cell_bg を渡すと、透明な所をその色で塗る（部品の一覧で、黒い部品を見やすくする）。
+    """
+    image_size = entries[0][2].width
+    scale = max(1, PREVIEW_CELL // image_size)
+    cell = image_size * scale
     gap = 16
     label = 64
     columns = 5
     rows = (len(entries) + columns - 1) // columns
-    preview = Image.new("RGBA", (columns * (cell + gap) + gap, rows * (cell + label + gap) + gap), PREVIEW_BG)
-    draw = ImageDraw.Draw(preview)
+    sheet = Image.new("RGBA", (columns * (cell + gap) + gap, rows * (cell + label + gap) + gap), PREVIEW_BG)
+    draw = ImageDraw.Draw(sheet)
     # Pillow 内蔵のフォント（環境によって一覧画像が変わらないように、システムのフォントは使わない）
     title_font = ImageFont.load_default(size=18)
     name_font = ImageFont.load_default(size=13)
-    for i, (code, name, image) in enumerate(entries):
+    for i, (title, note, image) in enumerate(entries):
         x = gap + (i % columns) * (cell + gap)
         y = gap + (i // columns) * (cell + label + gap)
-        composed = Image.alpha_composite(Image.new("RGBA", (SIZE, SIZE), PREVIEW_BG), image)
-        preview.paste(composed.resize((cell, cell), Image.NEAREST), (x, y))
-        draw.text((x, y + cell + 6), code, font=title_font, fill=PREVIEW_TEXT)
-        for j, line in enumerate(wrap(draw, name, name_font, cell)[:2]):
+        # 解像度の違う手の仕上げも、同じマスの大きさに整数倍（か整数分の 1）で収める
+        if image.width != image_size:
+            image = image.resize((image_size, image_size), Image.NEAREST)
+        background = Image.new("RGBA", image.size, cell_bg or PREVIEW_BG)
+        composed = Image.alpha_composite(background, image)
+        sheet.paste(composed.resize((cell, cell), Image.NEAREST), (x, y))
+        draw.text((x, y + cell + 6), title, font=title_font, fill=PREVIEW_TEXT)
+        for j, line in enumerate(wrap(draw, note, name_font, cell)[:2]):
             draw.text((x, y + cell + 28 + j * 16), line, font=name_font, fill=PREVIEW_NOTE)
-    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
-    preview.save(PREVIEW)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(path)
+
+
+def write_parts(size):
+    """部品の一覧画像: 部品を 1 つずつ白地に黒で塗って並べる（parts.catalog）。"""
+    entries = []
+    for i, (title, shape) in enumerate(parts.catalog()):
+        image = parts.new_canvas(size)
+        raster.fill(image, shape, BLACK)
+        entries.append((f"{i + 1:02d}", title, image))
+    write_sheet(PARTS_PREVIEW, entries, cell_bg=WHITE)
 
 
 # 手で描いただけの図柄（SIGNS にない名前）を確かめる色。名前の先頭の文字で分類を決める
-CATEGORY_COLORS = {"w": {YELLOW, BLACK}, "p": {WHITE, RED, BLACK}, "m": {BLUE, WHITE}}
+CATEGORY_COLORS = {"w": {YELLOW, BLACK}, "p": {WHITE, RED, BLACK}, "m": {BLUE, WHITE}, "e": {GREEN, WHITE},
+                   "f": {RED, WHITE}}
 ALL_COLORS = {YELLOW, BLACK, RED, BLUE, GREEN, WHITE}
 
 
+def parse_size():
+    parser = argparse.ArgumentParser(description="看板のテクスチャと一覧画像を生成する")
+    parser.add_argument("--size", type=int, default=DEFAULT_SIZE,
+                        help=f"図柄・無地・「?」の解像度（16〜512 の 2 の累乗。既定 {DEFAULT_SIZE}）")
+    size = parser.parse_args().size
+    if not is_power_of_two(size) or not 16 <= size <= 512:
+        parser.error(f"--size は 16〜512 の 2 の累乗にする（{size}）")
+    return size
+
+
 def main():
+    size = parse_size()
     names = english_names()
     entries = []
     manual_only = sorted(path.stem for path in MANUAL.glob("*.png") if path.stem not in SIGNS)
@@ -210,11 +302,14 @@ def main():
         sign = SIGNS.get(name)
         if (MANUAL / f"{name}.png").exists():
             allowed = sign["colors"] if sign else CATEGORY_COLORS.get(name[0], ALL_COLORS)
-            image = load_manual(name, allowed)
+            image = load_manual(name, allowed, size)
             source = "manual"
         else:
-            image = parts.new_canvas()
-            sign["draw"](image)
+            image = parts.new_canvas(size)
+            try:
+                sign["draw"](image)
+            except ValueError as error:
+                raise SystemExit(f"{name}: {error}")
             check_colors(name, image, sign["colors"])
             source = "generated"
         image.save(TEXTURES / "signs" / f"{name}.png")
@@ -224,15 +319,17 @@ def main():
         entries.append((code, english, image))
         print(f"{name}: {source}")
 
-    for name, image, title in [("blank", blank(), "Blank"), ("unknown", unknown(), "Unknown pattern ID")]:
+    for name, image, title in [("blank", blank(size), "Blank"), ("unknown", unknown(size), "Unknown pattern ID")]:
         image.save(TEXTURES / "blocks" / f"sign_{name}.png")
         entries.append((name, title, image))
     # 支柱と裏面は図柄ではないので、一覧画像には入れない
     pole().save(TEXTURES / "blocks" / "sign_pole.png")
     back().save(TEXTURES / "blocks" / "sign_back.png")
 
-    write_preview(entries)
-    print(f"wrote {len(entries)} textures and {PREVIEW.relative_to(ROOT)}")
+    write_sheet(PREVIEW, entries)
+    write_parts(size)
+    print(f"wrote {len(entries)} textures ({size}x{size}), {PREVIEW.relative_to(ROOT)} and "
+          f"{PARTS_PREVIEW.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
