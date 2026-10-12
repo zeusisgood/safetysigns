@@ -82,7 +82,17 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 | W042 | Warning | Arc flash |
 | W079 | Warning | Hot content |
 | W080 | Warning | Hot steam |
+| M001 | Mandatory action | General mandatory action sign |
+| M002 | Mandatory action | Refer to instruction manual/booklet |
+| M003 | Mandatory action | Wear ear protection |
+| M004 | Mandatory action | Wear eye protection |
+| M008 | Mandatory action | Wear safety footwear |
+| M009 | Mandatory action | Wear protective gloves |
 | M010 | Mandatory action | Wear protective clothing |
+| M013 | Mandatory action | Wear a face shield |
+| M014 | Mandatory action | Wear head protection |
+| M016 | Mandatory action | Wear a mask |
+| M017 | Mandatory action | Wear respiratory protection |
 | P001 | Prohibition | General prohibition sign |
 | P002 | Prohibition | No smoking |
 | P003 | Prohibition | No open flame; Fire, open ignition source and smoking prohibited |
@@ -90,6 +100,14 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 | P010 | Prohibition | Do not touch |
 | P011 | Prohibition | Do not extinguish with water |
 | P013 | Prohibition | No activated mobile phones |
+| E001 | Safe condition | Emergency exit (left hand) |
+| E002 | Safe condition | Emergency exit (right hand) |
+| E003 | Safe condition | First aid |
+| E011 | Safe condition | Eyewash station |
+| E012 | Safe condition | Safety shower |
+| E020 | Safe condition | Emergency stop button |
+| F001 | Fire equipment | Fire extinguisher |
+| F005 | Fire equipment | Fire alarm call point |
 | GHS01 | GHS | Exploding bomb |
 | GHS02 | GHS | Flame |
 | GHS03 | GHS | Flame over circle |

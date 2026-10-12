@@ -929,6 +929,252 @@ def mobile_phone(cx, cy, size):
     """携帯電話（P013）。"""
     return place(mobile_phone_shape(), SYMBOL_HEIGHT, cx, cy, size)
 
+# ---- 記号: ISO 7010 の指示・安全状態・防火（優先度 A の後半。仕様書 SPEC_2026-10-12-12.md） ----
+# 保護具の図柄（M003・M004・M013・M014・M016・M017）は、同じ頭部（head_shape）に保護具を重ねる。
+# 保護具は HEAD_ANCHORS の位置に合わせて、原点を中心にした高さ 40 の頭部の座標で書く（head_gear）。
+
+def _head_with(gear, gap=1.2):
+    """頭部（原点の中心で高さ 40）に保護具 gear を重ね、周りを gap だけ抜いて境目を見せる。"""
+    return wear(head_shape(), gear, gap=gap)
+
+
+def helmet_gear():
+    """保護帽（ヘルメット）: 頭を覆う半球と、左右へ張り出したつば。中央に縦の筋（白抜き）。"""
+    dome = ellipse(0.0, -9.6, 12.0, 12.8) & rect(-13.0, -24.0, 13.0, -9.6)
+    brim = rounded_rect(-15.6, -11.4, 15.6, -7.6, 1.6)
+    ridge = rect(-1.0, -20.0, 1.0, -11.4)
+    return (dome | brim) - ridge
+
+
+def ear_muffs_gear():
+    """耳の保護具（イヤーマフ）: 頭の上を通るバンドと、両耳を覆う大きな楕円のカップ。"""
+    band = arc_band(0.0, -6.0, 15.6, 12.8, 270, 90) & rect(-16.0, -24.0, 16.0, -4.0)
+    cups = union(*(rounded_rect(side * 13.6 - 4.0, -10.4, side * 13.6 + 4.0, 4.4, 3.6) for side in (-1, 1)))
+    return band | cups
+
+
+def goggles_gear():
+    """目の保護具（ゴーグル）: 目の高さで顔の幅より広い枠と、白く抜いた 2 つのレンズ、耳へ回るバンド。"""
+    frame = rounded_rect(-12.4, -11.4, 12.4, 0.6, 4.0)
+    lenses = union(*(rounded_rect(side * 6.0 - 4.6, -9.0, side * 6.0 + 4.6, -1.8, 2.4) for side in (-1, 1)))
+    bridge_notch = polygon([(-2.0, 0.8), (2.0, 0.8), (0.0, -2.6)])
+    strap = rect(-15.6, -8.0, 15.6, -3.6)
+    return (frame | strap) - lenses - bridge_notch
+
+
+def face_shield_gear():
+    """顔面保護具（防災面）: 額のバンドと、顔の前を覆う透明な面（太い輪郭線で描き、中の顔が見える）。"""
+    band = rounded_rect(-12.6, -18.0, 12.6, -12.0, 2.0)
+    visor = rounded_rect(-13.6, -12.0, 13.6, 12.4, 5.0)
+    return band | outline(visor, 2.2)
+
+
+def dust_mask_gear():
+    """マスク（防じんマスク）: 鼻と口を覆う、下へ少しとがった形と、耳へ伸びるひも。中に横の折り目（白抜き）。"""
+    cup = polygon([(-8.8, -3.4), (-3.0, -6.6), (3.0, -6.6), (8.8, -3.4), (8.0, 4.6), (0.0, 9.4), (-8.0, 4.6)])
+    straps = union(capsule((-8.4, -2.0), (-11.0, -3.0), 1.0), capsule((8.4, -2.0), (11.0, -3.0), 1.0))
+    folds = union(rect(-6.4, -1.8, 6.4, -1.0), rect(-6.0, 1.8, 6.0, 2.6))
+    return (cup - folds) | straps
+
+
+def respirator_gear():
+    """呼吸用保護具（防毒マスク）: 鼻と口を覆う面体と、両の頬の前に付けた大きな丸い吸収缶、中央の排気弁。"""
+    piece = rounded_rect(-7.4, -6.0, 7.4, 8.6, 4.4)
+    valve = circle(0.0, 4.0, 2.6) - circle(0.0, 4.0, 1.2)
+    canisters = union(*(circle(side * 9.6, 3.0, 5.0) - annulus(side * 9.6, 3.0, 3.4, 2.2) for side in (-1, 1)))
+    straps = union(capsule((-6.4, -4.0), (-12.0, -6.8), 1.0), capsule((6.4, -4.0), (12.0, -6.8), 1.0))
+    return layered(piece - valve | straps, canisters, gap=1.0)
+
+
+HEAD_GEAR = {"helmet": helmet_gear, "ear_muffs": ear_muffs_gear, "goggles": goggles_gear,
+             "face_shield": face_shield_gear, "dust_mask": dust_mask_gear, "respirator": respirator_gear}
+
+
+def protected_head(cx, cy, size, gear):
+    """保護具を付けた頭部（M003・M004・M013・M014・M016・M017）。gear は HEAD_GEAR の名前。
+    頭部の位置と大きさは、図柄どうしで揃える（generate.py の HEAD_GEAR_PLACE）。"""
+    return place(_head_with(HEAD_GEAR[gear]()), HEAD_HEIGHT, cx, cy, size)
+
+
+def open_book_shape():
+    """取扱説明書（原点の中心で高さ 40）: 手前に開いた本（左右のページに文字の行）と、上に情報の「i」。"""
+    pages = union(polygon([(-1.0, -2.0), (-8.0, -4.6), (-16.0, -3.4), (-16.0, 15.0), (-8.0, 13.8), (-1.0, 16.4)]),
+                  polygon([(1.0, -2.0), (8.0, -4.6), (16.0, -3.4), (16.0, 15.0), (8.0, 13.8), (1.0, 16.4)]))
+    cover = polygon([(-18.4, -1.0), (-18.4, 17.6), (-8.0, 16.4), (0.0, 19.4), (8.0, 16.4), (18.4, 17.6),
+                     (18.4, -1.0), (16.0, -1.0), (16.0, 15.0), (8.0, 13.8), (1.0, 16.4), (-1.0, 16.4),
+                     (-8.0, 13.8), (-16.0, 15.0), (-16.0, -1.0)])
+    lines = union(*(rect(x0, y + t, x0 + 9.4, y + t + 1.2) for x0, t in ((-13.4, 0.0), (3.6, 0.0))
+                    for y in (-0.6, 3.0, 6.6, 10.2)))
+    # 文字の行は、ページの傾きに合わせず水平に置く（細かい斜めの線はつぶれる）
+    info = circle(0.0, -16.4, 2.4) | rounded_rect(-2.1, -12.2, 2.1, -5.8, 0.8)
+    return (pages - lines) | cover | info
+
+
+def open_book(cx, cy, size):
+    """取扱説明書を読め（M002）。"""
+    return place(open_book_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def safety_boot_shape():
+    """安全靴（原点の中心で高さ 40）: 右向きの編み上げの半長靴。つま先の先しん（白抜きの線で区切る）と、厚い靴底。"""
+    upper = polygon([(-9.0, -18.0), (1.4, -18.0), (2.4, -4.0), (8.0, 0.4), (15.0, 3.2), (17.0, 8.0),
+                     (17.0, 12.6), (-11.0, 12.6), (-11.0, -6.0)])
+    sole = rounded_rect(-12.0, 13.6, 18.0, 18.6, 1.6)
+    heel_gap = rect(-3.0, 16.6, 5.0, 19.0)
+    toe_cap = arc_band(14.6, 12.6, 9.0, 7.8, 290, 360)
+    collar = rect(-10.0, -15.4, 2.0, -14.4)
+    laces = union(*(rect(-1.4 + i * 0.3, -12.0 + i * 3.2, 2.6 + i * 1.0, -11.0 + i * 3.2) for i in range(4)))
+    return (upper - toe_cap - collar - laces) | (sole - heel_gap)
+
+
+def safety_boot(cx, cy, size):
+    """安全靴を着用（M008）。"""
+    return place(safety_boot_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def glove_shape():
+    """保護手袋（原点の中心で高さ 40）: 手のひらの部品（hand_shape）を手袋にし、手首に広がる長い袖口を付ける。"""
+    glove = hand_shape().scale(0.86, 0.0, 0.0).shift(0.0, -3.6)
+    cuff = polygon([(-8.4, 11.6), (8.4, 11.6), (11.4, 20.0), (-11.4, 20.0)])
+    return layered(glove - rect(-20.0, 11.0, 20.0, 30.0), cuff, gap=1.2)
+
+
+def glove(cx, cy, size):
+    """保護手袋を着用（M009）。"""
+    return place(glove_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+# 安全状態・防火の記号は、四角（62 角）の中で原点を中心にした高さ 40 で書く
+
+def exit_door_shape():
+    """非常口（原点の中心で高さ 40。右向き = E002）: 右の扉の枠へ駆け込む人と、下の右向きの矢印。
+
+    扉は太い白の枠で、開口部は地の色のまま。人は扉の左で、手前の足が開口部へ入る。左向き（E001）は左右反転する。
+    """
+    frame = rect(7.0, -20.0, 20.0, 9.0) - rect(9.8, -17.2, 17.2, 9.0)
+    runner = person_running().scale(31.0 / PERSON_HEIGHT, 0.0, 0.0).shift(-4.0, -6.4)
+    arrow_shape = arrow(0.0, 16.0, 30.0, width=4.4, head_length=9.0, head_width=11.0)
+    return layered(frame, runner, gap=1.2) | arrow_shape
+
+
+def exit_door(cx, cy, size, mirror=False):
+    """非常口。mirror=False が右（E002）、True が左（E001）。人・扉・矢印をまとめて左右反転する。"""
+    return place(exit_door_shape(), SYMBOL_HEIGHT, cx, cy, size, mirror)
+
+
+def first_aid_cross(cx, cy, size):
+    """救急用具（E003）: 太い十字。size は十字の幅。"""
+    half, arm = size / 2, size * 0.17
+    return rect(cx - half, cy - arm, cx + half, cy + arm) | rect(cx - arm, cy - half, cx + arm, cy + half)
+
+
+def eyewash_shape():
+    """洗眼器（原点の中心で高さ 40）: 前へかがんだ横向き（右向き）の頭と、前の台のノズルから弧を描いて目へ届く水。
+
+    正面の頭部の部品だと、水の線が顔を横切って目が分からなくなるので、この図柄だけ横向きの頭を描く。
+    """
+    tilt, offset = 20, (-4.0, -4.0)
+    skull = ellipse(-3.0, -6.0, 9.6, 10.4)
+    face = polygon([(1.0, -14.0), (6.4, -9.0), (7.6, -4.6), (10.4, -1.2), (7.8, 0.0), (8.2, 3.0),
+                    (6.4, 5.6), (1.0, 6.4)])
+    neck = polygon([(-9.0, -1.0), (0.0, 2.0), (-1.0, 16.0), (-12.0, 16.0)])
+    eye_x, eye_y = 4.0, -6.0
+    profile = (union(skull, face, neck) - ellipse(eye_x, eye_y, 2.2, 1.4)).rotate(tilt, 0.0, 0.0).shift(*offset)
+    # 目の位置（頭と同じく回して動かす）
+    c, s = math.cos(math.radians(tilt)), math.sin(math.radians(tilt))
+    ex, ey = eye_x * c - eye_y * s + offset[0], eye_x * s + eye_y * c + offset[1]
+    # ノズル (13, 10) から上へ噴き上がり、目の前へ右上から下りる線（2 次のベジェ曲線。顔に食い込むと目が潰れる）
+    start, control, end = (13.0, 10.0), (15.0, -16.0), (ex + 4.6, ey - 0.4)
+    points = [((1 - t) ** 2 * start[0] + 2 * (1 - t) * t * control[0] + t * t * end[0],
+               (1 - t) ** 2 * start[1] + 2 * (1 - t) * t * control[1] + t * t * end[1])
+              for t in (i / 24 for i in range(25))]
+    stream = polyline(points, 0.9)
+    nozzle = rect(11.0, 9.6, 15.0, 15.0)
+    basin = (ellipse(4.0, 15.0, 15.0, 4.0) & rect(-12.0, 15.0, 20.0, 20.0)) | rect(-11.0, 14.0, 19.0, 15.0)
+    return layered(profile, stream, gap=1.0) | nozzle | basin
+
+
+def eyewash(cx, cy, size):
+    """洗眼器（E011）。"""
+    return place(eyewash_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def safety_shower_shape():
+    """緊急シャワー（原点の中心で高さ 40）: 上の配管から下がるシャワーの傘と、降りそそぐ水、その下に立つ人（正面）。"""
+    pipe = rect(-19.0, -19.0, 1.2, -16.4) | rect(-1.2, -19.0, 1.2, -13.0)
+    head = polygon([(-1.6, -13.4), (1.6, -13.4), (7.4, -9.4), (-7.4, -9.4)])
+    drops = union(*(capsule((x, y), (x, y + 2.0), 0.7)
+                    for x, y0 in ((-6.8, -7.4), (-2.3, -6.4), (2.3, -6.4), (6.8, -7.4))
+                    for y in (y0, y0 + 4.2)))
+    figure = person_standing().scale(28.0 / PERSON_HEIGHT, 0.0, 0.0).shift(0.0, 6.0)
+    return layered(pipe | head | drops, figure, gap=1.0)
+
+
+def safety_shower(cx, cy, size):
+    """緊急シャワー（E012）。"""
+    return place(safety_shower_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def stop_button_shape():
+    """非常停止ボタン（原点の中心で高さ 40）: 横から見たきのこ形の押しボタン（大きな丸い頭・首・台座）と、
+    上から押す手のひら。"""
+    cap = (ellipse(0.0, 4.0, 15.0, 8.0) & rect(-16.0, -5.0, 16.0, 4.0)) | rounded_rect(-15.0, 3.2, 15.0, 6.0, 1.0)
+    neck = rect(-5.4, 6.0, 5.4, 10.4)
+    base = rounded_rect(-13.0, 10.4, 13.0, 19.4, 1.6)
+    press = place(hand_shape(), HAND_HEIGHT, 0.0, -14.0, 22.0).rotate(180, 0.0, -14.0)
+    return layered(cap | neck | base, press, gap=1.2) - rect(-14.0, 13.2, 14.0, 14.2)
+
+
+def stop_button(cx, cy, size):
+    """非常停止ボタン（E020）。"""
+    return place(stop_button_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def extinguisher_shape():
+    """消火器（原点の中心で高さ 40）: 左寄りに立てた本体（丸い肩）、上のレバーと取っ手、右へ垂れるホースとノズル、
+    右上に小さな炎。"""
+    body = rounded_rect(-11.0, -8.0, 1.0, 19.0, 4.6)
+    valve = rect(-7.4, -12.0, -2.6, -7.0)
+    lever = polygon([(-10.6, -13.6), (-1.4, -16.8), (-0.4, -14.6), (-9.6, -11.8)])
+    grip = polygon([(-8.8, -12.0), (-1.6, -12.0), (-1.0, -10.2), (-8.8, -10.2)])
+    hose = polyline([(-2.0, -10.0), (4.6, -10.2), (7.4, -4.0), (7.4, 8.0)], 1.3)
+    nozzle = polygon([(5.6, 7.0), (9.2, 7.0), (10.2, 13.6), (4.6, 13.6)])
+    label = rect(-9.0, 0.0, -1.0, 1.2)
+    fire_ = place(flame_shape(), FLAME_HEIGHT, 13.0, -10.0, 13.0)
+    return layered((body - label) | valve | lever | grip, hose | nozzle, gap=1.0) | fire_
+
+
+def extinguisher(cx, cy, size):
+    """消火器（F001）。"""
+    return place(extinguisher_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
+def pointing_hand_shape():
+    """指さす手（原点の中心で高さ 40。指先は上）: 握った指と、上へ伸ばした人さし指、手首。"""
+    fist = rounded_rect(-7.4, -3.0, 7.0, 10.0, 3.2)
+    index = capsule((-3.6, -2.0), (-3.6, -17.6), 2.3)
+    knuckles = union(*(rect(-7.4, y, 2.6, y + 0.9) for y in (0.8, 4.2)))
+    thumb = capsule((5.4, 5.0), (0.4, 1.0), 2.4)
+    wrist = rect(-5.8, 9.0, 5.4, 20.0)
+    return layered(union(fist - knuckles, index, wrist), thumb, gap=0.9)
+
+
+def call_point_shape():
+    """火災報知機（原点の中心で高さ 40）: 右寄りの発信機の箱（中に押しボタンの円）と、左下から押す指、左上に小さな炎、
+    箱から出る音の弧。"""
+    box = rounded_rect(-1.0, -8.0, 18.0, 11.0, 2.0) - rounded_rect(2.0, -5.0, 15.0, 8.0, 1.0)
+    button = circle(8.5, 1.5, 4.0)
+    finger = pointing_hand_shape().rotate(45, 0.0, 0.0).scale(0.7, 0.0, 0.0).shift(-2.0, 12.0)
+    fire_ = place(flame_shape(), FLAME_HEIGHT, -12.0, -11.0, 14.0)
+    sound = union(*(arc_band(8.5, -8.0, r, r - 1.6, 325, 35) for r in (6.0, 10.0)))
+    return layered(box | button | sound, finger, gap=1.2) | fire_
+
+
+def call_point(cx, cy, size):
+    """火災報知機（F005）。"""
+    return place(call_point_shape(), SYMBOL_HEIGHT, cx, cy, size)
+
+
 # 部品の一覧画像（doc/textures/parts.png）に並べる部品: (見出し, 図形)。設計の座標の中心に高さ 44 前後で置く
 def catalog():
     c = CENTER
@@ -940,11 +1186,6 @@ def catalog():
         ("coverall person", coverall_person(c, c + 2, 48)),
         ("hand", hand(c, c, 46)),
         ("head (for gear)", head(c, c, 44)),
-        ("head + helmet (example)", wear(head(c, c, 44),
-                                        (ellipse(c, head_anchor("brow", c, c, 44)[1] - 1, 11.6, 11.4)
-                                         & rect(0, 0, UNITS, head_anchor("brow", c, c, 44)[1]))
-                                        | rect(c - 14, head_anchor("brow", c, c, 44)[1] - 2.6,
-                                               c + 14, head_anchor("brow", c, c, 44)[1]))),
         ("arrow", arrow(c, c, 46)),
         ("arrow (up)", arrow(c, c, 46, angle=-90)),
         ("flame", flame(c, c, 44)),
@@ -983,4 +1224,21 @@ def catalog():
         ("burning match", burning_match(c, c, 44)),
         ("bucket on fire", bucket_on_fire(c, c, 44)),
         ("mobile phone", mobile_phone(c, c, 44)),
+        ("head + ear muffs", protected_head(c, c, 44, "ear_muffs")),
+        ("head + goggles", protected_head(c, c, 44, "goggles")),
+        ("head + face shield", protected_head(c, c, 44, "face_shield")),
+        ("head + helmet", protected_head(c, c, 44, "helmet")),
+        ("head + dust mask", protected_head(c, c, 44, "dust_mask")),
+        ("head + respirator", protected_head(c, c, 44, "respirator")),
+        ("open book", open_book(c, c, 44)),
+        ("safety boot", safety_boot(c, c, 44)),
+        ("glove", glove(c, c, 44)),
+        ("emergency exit (right)", exit_door(c, c, 44)),
+        ("first aid cross", first_aid_cross(c, c, 40)),
+        ("eyewash", eyewash(c, c, 44)),
+        ("safety shower", safety_shower(c, c, 44)),
+        ("emergency stop button", stop_button(c, c, 44)),
+        ("fire extinguisher", extinguisher(c, c, 44)),
+        ("pointing hand", place(pointing_hand_shape(), SYMBOL_HEIGHT, c, c, 44)),
+        ("fire alarm call point", call_point(c, c, 44)),
     ]

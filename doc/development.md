@@ -81,6 +81,9 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 | 試験管・欠けた手 | `test_tube(底, 口, line)`・`corroded_hand(line)` | GHS05 と W023 で共用。`line` を渡すと輪郭線、渡さなければ塗りつぶし（試験管） |
 | ISO 7010 の警告の記号 | `laser` `antenna` `magnet` `biohazard` `snowflake` `automatic_start` `crushing` `corrosive_triangle` `battery` `upright_cylinder` `arc_flash` `hot_content` `hot_steam` | W004・W005・W006・W009・W010・W018・W019・W023・W026・W029・W042・W079・W080（W016 は `skull_crossbones`、W021 は `flame`） |
 | ISO 7010 の禁止の記号 | `cigarette` `burning_match` `bucket_on_fire` `mobile_phone` | P002・P003・P011・P013（P001 は記号なし: `prohibition()`） |
+| 保護具を付けた頭部 | `protected_head(cx, cy, size, gear)` | `gear` は `ear_muffs` `goggles` `face_shield` `helmet` `dust_mask` `respirator`（M003・M004・M013・M014・M016・M017）。保護具は `HEAD_GEAR` の関数で、頭部（`head_shape`）と同じ座標で書き、`wear` で重ねる。頭の位置と大きさは図柄どうしで揃える（`generate.py` の `HEAD_GEAR_PLACE`） |
+| ISO 7010 の指示の記号 | `open_book` `safety_boot` `glove` | M002・M008・M009（M001 は `exclamation`） |
+| ISO 7010 の安全状態・防火の記号 | `exit_door` `first_aid_cross` `eyewash` `safety_shower` `stop_button` `extinguisher` `call_point` | E001・E002（`mirror=True` が左の E001）・E003・E011・E012・E020・F001・F005。指さす手は `pointing_hand_shape`（F005）。E011 だけは横向きの頭を描く（正面の頭部だと水の線が顔を横切る） |
 
 部品を足すときは、原点を中心にした決まった高さで形を書き、`place` で置く（`hand_shape` と `hand` の組を見る）。輪郭線だけで描く部品（GHS05 の試験管・手）は `raster.outline(形, 太さ)` で線にする（形を `raster.erode` で細らせて抜いたもの。太さは小さい値の前提）。形は `raster.py` の基本の図形（円・楕円・四角・角の丸い四角・太線 `capsule`・太さの変わる線 `tapered`・折れ線 `polyline`・多角形・輪・波）を `|`（足す）・`-`（抜く）・`&`（重なり）で組む。
 重なった部品の境目を見せたいときは `raster.layered(奥, 手前, gap=1.0)`（手前の周りを gap だけ抜く）。

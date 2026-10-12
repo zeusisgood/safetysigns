@@ -161,12 +161,92 @@
       "keywords": ["hot", "steam", "vapour", "vapor", "高温", "蒸気", "湯気", "スチーム", "やけど"]
     },
     {
+      "id": "safetysigns:m001",
+      "category": "M",
+      "code": "M001",
+      "texture": "safetysigns:signs/m001",
+      "names": { "en_us": "General mandatory action sign", "ja_jp": "一般指示" },
+      "keywords": ["mandatory", "must", "instruction", "指示", "義務", "必須"]
+    },
+    {
+      "id": "safetysigns:m002",
+      "category": "M",
+      "code": "M002",
+      "texture": "safetysigns:signs/m002",
+      "names": { "en_us": "Refer to instruction manual/booklet", "ja_jp": "取扱説明書を読め" },
+      "keywords": ["manual", "instructions", "booklet", "read", "取扱説明書", "説明書", "マニュアル", "読め"]
+    },
+    {
+      "id": "safetysigns:m003",
+      "category": "M",
+      "code": "M003",
+      "texture": "safetysigns:signs/m003",
+      "names": { "en_us": "Wear ear protection", "ja_jp": "耳の保護具着用" },
+      "keywords": ["ear", "hearing", "noise", "earmuffs", "earplugs", "耳", "聴覚", "騒音", "イヤーマフ", "耳栓"]
+    },
+    {
+      "id": "safetysigns:m004",
+      "category": "M",
+      "code": "M004",
+      "texture": "safetysigns:signs/m004",
+      "names": { "en_us": "Wear eye protection", "ja_jp": "目の保護具着用" },
+      "keywords": ["eye", "goggles", "safety glasses", "目", "保護めがね", "ゴーグル", "眼"]
+    },
+    {
+      "id": "safetysigns:m008",
+      "category": "M",
+      "code": "M008",
+      "texture": "safetysigns:signs/m008",
+      "names": { "en_us": "Wear safety footwear", "ja_jp": "安全靴着用" },
+      "keywords": ["footwear", "boots", "shoes", "feet", "安全靴", "靴", "足"]
+    },
+    {
+      "id": "safetysigns:m009",
+      "category": "M",
+      "code": "M009",
+      "texture": "safetysigns:signs/m009",
+      "names": { "en_us": "Wear protective gloves", "ja_jp": "保護手袋着用" },
+      "keywords": ["gloves", "hand", "手袋", "保護手袋", "手"]
+    },
+    {
       "id": "safetysigns:m010",
       "category": "M",
       "code": "M010",
       "texture": "safetysigns:signs/m010",
       "names": { "en_us": "Wear protective clothing", "ja_jp": "防護服着用" },
       "keywords": ["protective clothing", "hazmat", "suit", "防護服", "保護衣"]
+    },
+    {
+      "id": "safetysigns:m013",
+      "category": "M",
+      "code": "M013",
+      "texture": "safetysigns:signs/m013",
+      "names": { "en_us": "Wear a face shield", "ja_jp": "顔面保護具着用" },
+      "keywords": ["face shield", "face", "visor", "顔面", "防災面", "保護面", "フェイスシールド"]
+    },
+    {
+      "id": "safetysigns:m014",
+      "category": "M",
+      "code": "M014",
+      "texture": "safetysigns:signs/m014",
+      "names": { "en_us": "Wear head protection", "ja_jp": "保護帽着用" },
+      "keywords": ["helmet", "hard hat", "head", "保護帽", "ヘルメット", "頭"]
+    },
+    {
+      "id": "safetysigns:m016",
+      "category": "M",
+      "code": "M016",
+      "texture": "safetysigns:signs/m016",
+      "names": { "en_us": "Wear a mask", "ja_jp": "マスク着用" },
+      "keywords": ["mask", "dust", "マスク", "防じんマスク", "粉じん"]
+    },
+    {
+      "id": "safetysigns:m017",
+      "category": "M",
+      "code": "M017",
+      "texture": "safetysigns:signs/m017",
+      "names": { "en_us": "Wear respiratory protection", "ja_jp": "呼吸用保護具着用" },
+      "keywords": ["respirator", "respiratory", "gas mask", "breathing", "呼吸用保護具", "防毒マスク", "呼吸"]
     },
     {
       "id": "safetysigns:p001",
@@ -223,6 +303,70 @@
       "texture": "safetysigns:signs/p013",
       "names": { "en_us": "No activated mobile phones", "ja_jp": "携帯電話の使用禁止" },
       "keywords": ["mobile phone", "cell phone", "smartphone", "phone", "携帯電話", "スマートフォン", "スマホ", "電話"]
+    },
+    {
+      "id": "safetysigns:e001",
+      "category": "E",
+      "code": "E001",
+      "texture": "safetysigns:signs/e001",
+      "names": { "en_us": "Emergency exit (left hand)", "ja_jp": "非常口（左）" },
+      "keywords": ["exit", "emergency exit", "escape", "evacuation", "left", "非常口", "避難口", "出口", "避難", "左"]
+    },
+    {
+      "id": "safetysigns:e002",
+      "category": "E",
+      "code": "E002",
+      "texture": "safetysigns:signs/e002",
+      "names": { "en_us": "Emergency exit (right hand)", "ja_jp": "非常口（右）" },
+      "keywords": ["exit", "emergency exit", "escape", "evacuation", "right", "非常口", "避難口", "出口", "避難", "右"]
+    },
+    {
+      "id": "safetysigns:e003",
+      "category": "E",
+      "code": "E003",
+      "texture": "safetysigns:signs/e003",
+      "names": { "en_us": "First aid", "ja_jp": "救急用具" },
+      "keywords": ["first aid", "medical", "kit", "救急", "救急箱", "応急手当", "手当"]
+    },
+    {
+      "id": "safetysigns:e011",
+      "category": "E",
+      "code": "E011",
+      "texture": "safetysigns:signs/e011",
+      "names": { "en_us": "Eyewash station", "ja_jp": "洗眼器" },
+      "keywords": ["eyewash", "eye", "wash", "洗眼", "洗眼器", "目", "洗う"]
+    },
+    {
+      "id": "safetysigns:e012",
+      "category": "E",
+      "code": "E012",
+      "texture": "safetysigns:signs/e012",
+      "names": { "en_us": "Safety shower", "ja_jp": "緊急シャワー" },
+      "keywords": ["safety shower", "emergency shower", "shower", "緊急シャワー", "安全シャワー", "シャワー"]
+    },
+    {
+      "id": "safetysigns:e020",
+      "category": "E",
+      "code": "E020",
+      "texture": "safetysigns:signs/e020",
+      "names": { "en_us": "Emergency stop button", "ja_jp": "非常停止ボタン" },
+      "keywords": ["emergency stop", "stop", "e-stop", "scram", "非常停止", "緊急停止", "停止", "スクラム", "ボタン"]
+    },
+    {
+      "id": "safetysigns:f001",
+      "category": "F",
+      "code": "F001",
+      "texture": "safetysigns:signs/f001",
+      "names": { "en_us": "Fire extinguisher", "ja_jp": "消火器" },
+      "keywords": ["fire extinguisher", "extinguisher", "fire", "消火器", "消火", "火災"]
+    },
+    {
+      "id": "safetysigns:f005",
+      "category": "F",
+      "code": "F005",
+      "texture": "safetysigns:signs/f005",
+      "names": { "en_us": "Fire alarm call point", "ja_jp": "火災報知機" },
+      "keywords": ["fire alarm", "call point", "alarm", "fire", "火災報知機", "火災報知器", "発信機", "警報", "火災"]
     },
     {
       "id": "safetysigns:iso21482",
