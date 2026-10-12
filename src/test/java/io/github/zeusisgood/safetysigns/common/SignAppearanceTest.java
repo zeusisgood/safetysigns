@@ -23,21 +23,29 @@ public class SignAppearanceTest {
     }
 
     @Test
-    public void withChangesOnlyOneValue() {
-        SignAppearance a = new SignAppearance("safetysigns:w003", true, false);
-        assertEquals(new SignAppearance("safetysigns:w003", false, false), a.withCutout(false));
-        assertEquals(new SignAppearance("safetysigns:w003", true, true), a.withBackPattern(true));
-        assertEquals(new SignAppearance(null, true, false), a.withSignId(null));
+    public void withSignIdKeepsTheOtherValues() {
+        SignAppearance a = new SignAppearance("safetysigns:w003", false, true);
+        assertEquals(new SignAppearance("safetysigns:w001", false, true), a.withSignId("safetysigns:w001"));
         // 元の値は変わらない
         assertEquals("safetysigns:w003", a.getSignId());
     }
 
     @Test
+    public void blankIsAlwaysCutout() {
+        // 無地は切り抜きで見た目が変わらないので、ON にそろえる（裏面はそのまま）
+        assertTrue(new SignAppearance(null, false, false).isCutout());
+        assertEquals(SignAppearance.DEFAULT, new SignAppearance(null, false, false));
+        assertEquals(new SignAppearance(null, true, true), new SignAppearance(null, false, true));
+        assertEquals(new SignAppearance(null, true, true), new SignAppearance("safetysigns:w003", false, true).withSignId(null));
+    }
+
+    @Test
     public void equalityCoversEveryValue() {
         SignAppearance a = new SignAppearance("safetysigns:w003", true, false);
+        assertEquals(a, new SignAppearance("safetysigns:w003", true, false));
         assertEquals(a.hashCode(), new SignAppearance("safetysigns:w003", true, false).hashCode());
-        assertNotEquals(a, a.withCutout(false));
-        assertNotEquals(a, a.withBackPattern(true));
-        assertNotEquals(a, a.withSignId("safetysigns:w001"));
+        assertNotEquals(a, new SignAppearance("safetysigns:w003", false, false));
+        assertNotEquals(a, new SignAppearance("safetysigns:w003", true, true));
+        assertNotEquals(a, new SignAppearance("safetysigns:w001", true, false));
     }
 }

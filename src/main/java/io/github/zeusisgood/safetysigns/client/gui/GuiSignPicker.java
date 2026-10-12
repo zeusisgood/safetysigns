@@ -176,10 +176,9 @@ public class GuiSignPicker extends GuiScreen {
         }
         scrollRow = Math.min(scrollRow, maxScroll());
         blankButton.enabled = selected != null;
-        refreshOptionButtons();
     }
 
-    /** 切り抜き・裏面のボタンの文字と押せるか。無地は形が四角しかないので、切り抜きは押せない表示にする（値は保持する）。 */
+    /** 切り抜き・裏面のボタンの文字と押せるか。無地は形が四角しかないので、切り抜きは ON のまま押せない表示にする。 */
     private void refreshOptionButtons() {
         cutoutButton.displayString = I18n.format("gui.safetysigns.cutout",
                 I18n.format(cutout ? "gui.safetysigns.cutout.on" : "gui.safetysigns.cutout.off"));
@@ -198,6 +197,10 @@ public class GuiSignPicker extends GuiScreen {
             return;
         }
         selected = signId;
+        if (signId == null) {
+            // 無地は常に切り抜き ON（SignAppearance と同じ）。次に図柄を選んだときも ON から始まる
+            cutout = true;
+        }
         blankButton.enabled = selected != null;
         refreshOptionButtons();
         send();

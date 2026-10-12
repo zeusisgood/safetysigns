@@ -62,12 +62,6 @@ public final class SignNbt {
         return read(stack.getTagCompound());
     }
 
-    /** アイテムの図柄 ID。null は無地。 */
-    @Nullable
-    public static String getSignId(ItemStack stack) {
-        return get(stack).getSignId();
-    }
-
     /** アイテムの見た目を変える。タグが空になったら外す（無地のアイテムとスタックできるように）。 */
     public static void set(ItemStack stack, SignAppearance appearance) {
         NBTTagCompound compound = stack.getTagCompound();

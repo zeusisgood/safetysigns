@@ -11,7 +11,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import javax.annotation.Nullable;
 
 /**
  * 看板の見た目（図柄 ID・切り抜き・裏面。{@link SignAppearance}）を持つ TileEntity。既定の値は NBT にキーを書かない。
@@ -24,12 +23,6 @@ public class TileEntitySafetySign extends TileEntity {
 
     public SignAppearance getAppearance() {
         return appearance;
-    }
-
-    /** 図柄 ID。null は無地。 */
-    @Nullable
-    public String getSignId() {
-        return appearance.getSignId();
     }
 
     /** 見た目を変えて、保存とクライアントへの同期を予約する（サーバー側で呼ぶ）。 */

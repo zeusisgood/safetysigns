@@ -105,8 +105,8 @@ public class ItemSafetySign extends ItemBlock {
         // 図柄のコードと名前（一覧にない ID は「?」と ID）。既定と違う設定だけ 1 行ずつ足す
         SignAppearance appearance = SignNbt.get(stack);
         tooltip.add(SignTextures.describe(appearance.getSignId()));
-        // 無地は切り抜きで見た目が変わらないので出さない（値は保持している）
-        if (!appearance.isCutout() && appearance.getSignId() != null) {
+        // 無地は常に切り抜き ON なので、出るのは図柄のある看板だけ
+        if (!appearance.isCutout()) {
             tooltip.add(I18n.format("tooltip.safetysigns.no_cutout"));
         }
         if (appearance.isBackPattern()) {
