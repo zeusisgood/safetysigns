@@ -167,6 +167,8 @@ def sign_size(sign, size):
 
 C = parts.CENTER
 TY = parts.TRIANGLE_SYMBOL_Y
+# 保護具の図柄（M003・M004・M013・M014・M016・M017）の頭部の中心と高さ。図柄どうしで頭の大きさ・位置を揃える
+HEAD_GEAR_PLACE = (C, C + 2.5, 40)
 
 SIGNS = {
     "w001": warning(parts.exclamation(C, TY - 2, 29)),
@@ -189,7 +191,17 @@ SIGNS = {
     "w042": warning(parts.arc_flash(C, 39.5, 27)),
     "w079": warning(parts.hot_content(C, 41, 25)),
     "w080": warning(parts.hot_steam(C, 36, 40)),
+    "m001": mandatory(parts.exclamation(C, C, 40)),
+    "m002": mandatory(parts.open_book(C, C + 0.5, 40)),
+    "m003": mandatory(parts.protected_head(*HEAD_GEAR_PLACE, "ear_muffs")),
+    "m004": mandatory(parts.protected_head(*HEAD_GEAR_PLACE, "goggles")),
+    "m008": mandatory(parts.safety_boot(C, C, 40)),
+    "m009": mandatory(parts.glove(C, C, 44)),
     "m010": mandatory(parts.coverall_person(C, C + 0.5, 48)),
+    "m013": mandatory(parts.protected_head(*HEAD_GEAR_PLACE, "face_shield")),
+    "m014": mandatory(parts.protected_head(*HEAD_GEAR_PLACE, "helmet")),
+    "m016": mandatory(parts.protected_head(*HEAD_GEAR_PLACE, "dust_mask")),
+    "m017": mandatory(parts.protected_head(*HEAD_GEAR_PLACE, "respirator")),
     "p001": prohibition(),
     "p002": prohibition(parts.cigarette(C, C, 40)),
     "p003": prohibition(parts.burning_match(C, C, 40)),
@@ -197,6 +209,14 @@ SIGNS = {
     "p010": prohibition(parts.hand(C + 1, C + 0.5, 42)),
     "p011": prohibition(parts.bucket_on_fire(C, C, 40)),
     "p013": prohibition(parts.mobile_phone(C, C, 40)),
+    "e001": safe_condition(parts.exit_door(C, C, 52, mirror=True)),
+    "e002": safe_condition(parts.exit_door(C, C, 52)),
+    "e003": safe_condition(parts.first_aid_cross(C, C, 44)),
+    "e011": safe_condition(parts.eyewash(C, C, 50)),
+    "e012": safe_condition(parts.safety_shower(C, C, 52)),
+    "e020": safe_condition(parts.stop_button(C, C + 1, 44)),
+    "f001": fire(parts.extinguisher(C, C, 50)),
+    "f005": fire(parts.call_point(C, C - 1, 44)),
     "ghs01": ghs(parts.exploding_bomb(C, C, 34)),
     "ghs02": ghs(parts.flame_on_bar(C, C, 30)),
     "ghs03": ghs(parts.flame_over_circle(C, C, 30)),

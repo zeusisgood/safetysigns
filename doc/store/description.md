@@ -24,10 +24,12 @@ Put a radiation sign around your reactor, an electricity sign on your switchboar
 ### Features
 
 - Three sign types: **wall 1x1**, **wall 2x2** and **pole** (3 blocks tall)
-- 38 pictograms
+- 56 pictograms
   - ISO 7010 warnings: general warning, explosive, radioactive, laser beam, non-ionizing radiation, magnetic field, biological hazard, low temperature, electricity, toxic, hot surface, automatic start-up, crushing, flammable, corrosive, battery charging, pressurized cylinder, arc flash, hot content, hot steam
   - ISO 7010 prohibitions: general prohibition, no smoking, no open flame, no thoroughfare, do not touch, do not extinguish with water, no activated mobile phones
-  - ISO 7010 mandatory: wear protective clothing
+  - ISO 7010 mandatory: general mandatory action, refer to instruction manual, wear ear protection, wear eye protection, wear safety footwear, wear protective gloves, wear protective clothing, wear a face shield, wear head protection, wear a mask, wear respiratory protection
+  - ISO 7010 safe condition: emergency exit (left and right), first aid, eyewash station, safety shower, emergency stop button
+  - ISO 7010 fire equipment: fire extinguisher, fire alarm call point
   - GHS: all 9 pictograms (exploding bomb, flame, flame over circle, gas cylinder, corrosion, skull and crossbones, exclamation mark, health hazard, environment)
   - ISO 21482: ionizing radiation (large sources)
 - Right-click a placed sign to pick a pictogram, with category tabs and search (English and Japanese)
@@ -61,10 +63,12 @@ ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・
 ### できること
 
 - 看板は 3 種類: **壁掛け 1×1**・**壁掛け 2×2**・**ポール付き**（縦 3 ブロック）
-- 図柄は 38 種
+- 図柄は 56 種
   - ISO 7010 の警告: 一般警告・爆発物・放射性物質・レーザー光線・非電離放射線・磁界・生物学的危険・低温・感電・毒物・高温・自動起動・挟まれ・可燃性物質・腐食性物質・電池充電・高圧ガス容器・アークフラッシュ・高温の内容物・高温の蒸気
   - ISO 7010 の禁止: 一般禁止・禁煙・火気厳禁・通行禁止・触るな・水による消火禁止・携帯電話の使用禁止
-  - ISO 7010 の指示: 防護服着用
+  - ISO 7010 の指示: 一般指示・取扱説明書を読め・耳の保護具着用・目の保護具着用・安全靴着用・保護手袋着用・防護服着用・顔面保護具着用・保護帽着用・マスク着用・呼吸用保護具着用
+  - ISO 7010 の安全状態: 非常口（左・右）・救急用具・洗眼器・緊急シャワー・非常停止ボタン
+  - ISO 7010 の防火: 消火器・火災報知機
   - GHS: 9 種すべて（爆弾の爆発・炎・円上の炎・ガスボンベ・腐食性・どくろ・感嘆符・健康有害性・環境）
   - ISO 21482: 電離放射線（大量の線源）
 - 置いた看板を右クリックして図柄を選ぶ（分類のタブと、日英の検索）
