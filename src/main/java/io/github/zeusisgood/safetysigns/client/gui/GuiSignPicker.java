@@ -408,7 +408,8 @@ public class GuiSignPicker extends GuiScreen {
             int background;
             int textColor;
             if (category == tab) {
-                // 選択中だけ分類の色。黄色の W は黒い文字。P と F は同じ赤なので、F は文字を黄にして区別する（GHS は明るい赤、その他は黒に白の文字）
+                // 選択中だけ分類の色。黄色の W は黒い文字。P と F は同じ赤なので、F は文字を黄にして区別する
+                // GHS は明るい赤、その他は黒に白の文字
                 background = 0xFF000000 | category.getColor();
                 textColor = category == SignCategory.W ? 0x1A1A1A : category == SignCategory.F ? 0xF9A800 : 0xFFFFFF;
             } else if (empty) {

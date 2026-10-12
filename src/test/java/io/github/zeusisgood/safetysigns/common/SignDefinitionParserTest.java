@@ -75,6 +75,15 @@ public class SignDefinitionParserTest {
     }
 
     @Test
+    public void skipsEmptyCategory() {
+        SignDefinitionParser.Result result = parse("pack", "{\"signs\":["
+                + "{\"id\":\"pack:a\",\"category\":\"\"},"
+                + "{\"id\":\"pack:b\",\"category\":\" \"}]}");
+        assertTrue(result.getDefinitions().isEmpty());
+        assertEquals(2, result.getWarnings().size());
+    }
+
+    @Test
     public void unknownCategoryFallsBackToOther() {
         SignDefinitionParser.Result result = parse("pack", "{\"signs\":[{\"id\":\"pack:un1\",\"category\":\"TRANSPORT\"}]}");
         assertEquals(1, result.getDefinitions().size());
