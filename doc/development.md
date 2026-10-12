@@ -106,3 +106,28 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 4. 2 の累乗の正方形でなければ止まる。解像度がその図柄の解像度（`--size`。既定 128）と違う・色が外れていると警告が出る（出力はされる）。直してから流し直す。
 
 `manual/` のファイルを消せば、生成に戻る。`SIGNS` にない名前のファイルを置けば、手で描いただけの図柄としても出力される（定義ファイルの項目は別に足す）。
+
+## リリースの手順
+
+タグと GitHub Release は、`main` に取り込まれたあとに Actions（`.github/workflows/release.yml`）が作る。Claude はタグを付けない（`.claude/settings.json` で `git tag` とタグの push を止めている）。流れの図は [`diagrams/release.md`](diagrams/release.md)。
+
+### 版を上げる PR で直すもの
+
+1. `build.gradle` の `version` と `SafetySignsMod.VERSION` を揃えて上げる（パッチ・マイナーの決め方は `CLAUDE.md` の「バージョン」）。マイナーを上げるときは `SafetySignsMod.ACCEPTED_VERSIONS` も新しいマイナーの範囲にする。
+2. `CHANGELOG.md` の一番上に `## <版>` の節を足す。この節がそのまま Release の本文になる（マイナーなら、旧マイナーとは接続できないことを書く）。
+3. `./gradlew build` を流す。`resources/ReleaseFilesTest` が、`build.gradle`・`SafetySignsMod.VERSION`・`CHANGELOG.md` の最新の見出しの 3 つが一致するかを確かめる（ずれていれば PR の CI が落ちる）。
+4. jar を `build/release/` にコピーし（Merge の前に試せるように）、PR を作る。
+
+文書だけの変更など、版を上げない PR では何も起きない。
+
+### Merge のあと（Actions が行う）
+
+1. `build.gradle` の `version` を読み、タグ `v<版>` がもうあれば何もしない。
+2. なければ `./gradlew build`（ビルドとテスト）を流す。失敗したら、タグも Release も作らない。
+3. `CHANGELOG.md` の `## <版>` から次の `## ` の手前までを本文にし、`safetysigns-1.12.2-<版>.jar` を添付して、取り込んだコミットにタグ `v<版>` と Release を作る（`gh release create`）。節がない・空なら止まる。
+
+### 確かめ方・失敗したとき
+
+- GitHub の Actions の「Release」が緑で、Releases に `v<版>` があり、jar が添付され、本文が `CHANGELOG.md` の節と同じなら成功。
+- ビルドやテストで落ちたときは、直す PR を Merge すれば、その push でもう一度流れる（タグがまだないので）。
+- 一時的な失敗（Maven の取得など）なら、Actions の画面で失敗した「Release」を Re-run する。
