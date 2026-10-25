@@ -205,6 +205,11 @@ public abstract class BlockSafetySign extends Block implements EntityBlock {
         if (origin == null) {
             return Collections.emptyList();
         }
+        // 爆発では 1.12.2・バニラのブロックと同じく、1 / 爆発の大きさ の確率で落ちる（ルートテーブルを使わないので、ここで決める）
+        Float radius = params.getOptionalParameter(LootContextParams.EXPLOSION_RADIUS);
+        if (radius != null && radius > 1.0F && params.getLevel().getRandom().nextFloat() > 1.0F / radius) {
+            return Collections.emptyList();
+        }
         return Collections.singletonList(createSignStack(params.getLevel(), BlockPos.containing(origin)));
     }
 

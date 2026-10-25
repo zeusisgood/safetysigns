@@ -60,8 +60,10 @@ public final class SignTextures implements ResourceManagerReloadListener {
 
     private static volatile SignCatalog catalog = SignCatalog.EMPTY;
     private static volatile Map<ResourceLocation, SignOutline> outlines = Collections.emptyMap();
-    /** atlas に入らない所を texture に書いた図柄 ID（「?」で出す）。 */
-    private static volatile Set<String> outsideAtlas = Collections.emptySet();
+    /** 図柄 ID → 描けるテクスチャ。atlas に入らない所（signs/ の外・名前として読めない）を texture に書いた図柄は入れない（「?」で出す）。 */
+    private static volatile Map<String, ResourceLocation> textureById = Collections.emptyMap();
+    /** 描けない texture を警告した図柄 ID（読み直すたびに同じ警告を出さない）。 */
+    private static final Set<String> warned = Collections.synchronizedSet(new HashSet<>());
     /** リソースを読み直した回数。描画が取っておいた形（SignRenderer）を作り直す合図。 */
     private static volatile int generation;
 
@@ -75,18 +77,21 @@ public final class SignTextures implements ResourceManagerReloadListener {
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
         SignCatalog loaded = load(resourceManager);
-        Set<String> outside = new HashSet<>();
+        Map<String, ResourceLocation> byId = new HashMap<>();
         List<ResourceLocation> textures = new ArrayList<>();
         textures.add(BLANK);
         textures.add(UNKNOWN);
         for (SignDefinition definition : loaded.all()) {
-            ResourceLocation texture = ResourceLocation.parse(definition.getTexture());
-            if (!texture.getPath().startsWith(SIGN_TEXTURE_DIRECTORY)) {
-                SafetySignsMod.LOGGER.warn("The texture of {} ({}) is not under textures/{}; it is shown as \"?\" on this version",
-                        definition.getId(), texture, SIGN_TEXTURE_DIRECTORY);
-                outside.add(definition.getId());
+            // 定義ファイルの読み取りは texture の形を確かめないので、名前として読めないものもここで「?」にする（例外で読み直しを止めない）
+            ResourceLocation texture = ResourceLocation.tryParse(definition.getTexture());
+            if (texture == null || !texture.getPath().startsWith(SIGN_TEXTURE_DIRECTORY)) {
+                if (warned.add(definition.getId())) {
+                    SafetySignsMod.LOGGER.warn("The texture of {} ({}) is not under textures/{}; it is shown as \"?\" on this version",
+                            definition.getId(), definition.getTexture(), SIGN_TEXTURE_DIRECTORY);
+                }
                 continue;
             }
+            byId.put(definition.getId(), texture);
             textures.add(texture);
         }
         Map<ResourceLocation, SignOutline> shapes = new HashMap<>();
@@ -94,7 +99,7 @@ public final class SignTextures implements ResourceManagerReloadListener {
             shapes.computeIfAbsent(texture, t -> readOutline(resourceManager, t));
         }
         outlines = shapes;
-        outsideAtlas = outside;
+        textureById = byId;
         catalog = loaded;
         generation++;
         SafetySignsMod.LOGGER.info("Loaded {} sign definitions", loaded.all().size());
@@ -177,8 +182,7 @@ public final class SignTextures implements ResourceManagerReloadListener {
         if (signId == null) {
             return BLANK;
         }
-        SignDefinition definition = catalog.get(signId);
-        return definition != null && !outsideAtlas.contains(signId) ? ResourceLocation.parse(definition.getTexture()) : UNKNOWN;
+        return textureById.getOrDefault(signId, UNKNOWN);
     }
 
     public static TextureAtlasSprite sprite(ResourceLocation texture) {
