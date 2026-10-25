@@ -1,0 +1,72 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+// 版は SafetySignsMod.VERSION と必ず揃える（CLAUDE.md のバージョンの方針）
+version = mod_version
+group = 'io.github.zeusisgood'
+base.archivesName = "safetysigns-${minecraft_version}-forge"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+// 版に依存しない計算（common）と全部の版で同じリソース（shared）は、各版のビルドがソースで読む
+sourceSets {
+    main.java.srcDir '../common/src/main/java'
+    main.resources.srcDir '../shared'
+    test.java.srcDir '../common/src/test/java'
+}
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            mods {
+                safetysigns {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {
+        }
+        server {
+            args '--nogui'
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// 翻訳の正本は ../lang/*.json。1.20.1 はそのまま読む
+processResources {
+    inputs.property 'version', version
+    from('../lang') {
+        include '*.json'
+        into 'assets/safetysigns/lang'
+    }
+    filesMatching('META-INF/mods.toml') {
+        expand 'version': version, 'minecraft_version': minecraft_version, 'forge_version': forge_version
+    }
+}
+
+jar {
+    // MIT の条件（配布物に著作権表示を付ける）のため、jar にも LICENSE を入れる
+    from('../LICENSE') {
+        rename { 'LICENSE_safetysigns' }
+    }
+    finalizedBy 'reobfJar'
+}
+
+test {
+    // テストは、リポジトリ直下のファイル（翻訳・CHANGELOG.md・各版の版の番号）を読む
+    workingDir = file('..')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

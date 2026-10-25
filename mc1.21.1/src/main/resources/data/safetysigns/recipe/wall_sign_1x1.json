@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "safetysigns:sign",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "minecraft:signs"
+    },
+    {
+      "tag": "c:ingots/iron"
+    }
+  ],
+  "result": {
+    "id": "safetysigns:wall_sign_1x1",
+    "count": 1
+  }
+}

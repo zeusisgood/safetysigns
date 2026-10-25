@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "safetysigns:sign",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "minecraft:signs"
+    },
+    {
+      "tag": "minecraft:signs"
+    },
+    {
+      "tag": "minecraft:signs"
+    },
+    {
+      "tag": "c:ingots/iron"
+    }
+  ],
+  "result": {
+    "id": "safetysigns:pole_sign",
+    "count": 1
+  }
+}

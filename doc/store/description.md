@@ -14,7 +14,7 @@ CurseForge の説明欄にそのまま貼る文章。英語を先に、日本語
 | 名前 | Safety Signs |
 | 短い説明（Summary） | Decorative warning signs inspired by ISO 7010 and other safety signs and hazard symbols. Unofficial. |
 | 分類 | Decoration |
-| 対応 | Minecraft 1.12.2 / Forge（クライアントとサーバーの両方） |
+| 対応 | Minecraft 1.12.2 / Forge・1.20.1 / Forge・1.21.1 / NeoForge（クライアントとサーバーの両方。Minecraft の版ごとに別の jar） |
 | ライセンス | MIT |
 | ソース | https://github.com/zeusisgood/safetysigns |
 
@@ -22,7 +22,7 @@ CurseForge の説明欄にそのまま貼る文章。英語を先に、日本語
 
 ## Safety Signs
 
-Decorative warning signs inspired by **ISO 7010** and other safety signs and hazard symbols (**GHS** pictograms, **ISO 21482**) for Minecraft 1.12.2 (Forge).
+Decorative warning signs inspired by **ISO 7010** and other safety signs and hazard symbols (**GHS** pictograms, **ISO 21482**) for Minecraft 1.12.2 (Forge), 1.20.1 (Forge) and 1.21.1 (NeoForge).
 Put a radiation sign around your reactor, an electricity sign on your switchboard, or a "no thoroughfare" sign at the door. The signs are purely decorative and have no gameplay effect.
 
 > **Unofficial mod. Not affiliated with ISO, the United Nations or any standards body.** The pictograms were drawn for this mod with ISO 7010, the GHS and ISO 21482 as references.
@@ -41,27 +41,29 @@ Put a radiation sign around your reactor, an electricity sign on your switchboar
 - Right-click a placed sign to pick a pictogram, with category tabs and search (English and Japanese)
 - Per-sign settings: **cutout** (plate shaped like the pictogram, or square), **back** (plain silver or the same pictogram), **night glow** (pictogram drawn at full brightness)
 - Sneak + right-click with a sign item to copy a sign's look; broken signs keep their pictogram
-- **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 128x128)
+- **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 128x128; on 1.20.1 and 1.21.1 the texture goes under `textures/signs/`)
 
 ### Recipes (shapeless)
 
 - Wall sign 1x1: 1 wooden sign + 1 iron ingot
 - Wall sign 2x2: 4 wooden signs + 1 iron ingot
 - Pole sign: 3 wooden signs + 1 iron ingot
-- Iron accepts the ore dictionary `ingotIron` and `plateIron`
+- Iron ingots from other mods also work (ore dictionary `ingotIron` on 1.12.2, tags `forge:ingots/iron` on 1.20.1 and `c:ingots/iron` on 1.21.1). On 1.12.2, the ore dictionary `plateIron` also works
+- Any wood sign works on 1.20.1 and 1.21.1
 - A single sign item in the grid resets it to blank
 
 ### Notes
 
 - Required on **both the client and the server**.
-- Developed and tested with Forge 14.23.5.2860.
+- Developed with Forge 14.23.5.2860 (1.12.2), Forge 47.1.32 (1.20.1, works on 47.1.32 or later) and NeoForge 21.1.264 (1.21.1).
+- Only the same minor version can connect (e.g. 1.1.x with 1.1.x).
 - Languages: English, Japanese.
 
 ---
 
 ## Safety Signs（日本語）
 
-ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・**ISO 21482**）をモチーフにした、装飾用の警告看板を追加する Minecraft 1.12.2（Forge）の Mod です。
+ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・**ISO 21482**）をモチーフにした、装飾用の警告看板を追加する Minecraft 1.12.2（Forge）・1.20.1（Forge）・1.21.1（NeoForge）の Mod です。
 原子炉のまわりに放射線の看板、配電盤に感電注意、扉に通行禁止などを立てられます。看板は見た目だけで、ゲーム上の効果はありません。
 
 > **ISO・国連・各規格の団体とは無関係の非公式 Mod です。** 図柄は ISO 7010・GHS・ISO 21482 を参考に、この Mod のために描き起こしたものです。
@@ -80,18 +82,20 @@ ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・
 - 置いた看板を右クリックして図柄を選ぶ（分類のタブと、日英の検索）
 - 看板ごとの設定: **切り抜き**（図柄の形の板 / 四角い板）、**裏面**（銀 / 同じ図柄）、**夜間に光る**（図柄を明るさ最大で描く）
 - 看板アイテムを持ってスニーク + 右クリックで見た目を写す。壊しても図柄は残る
-- **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。128×128 など）
+- **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。128×128 など。1.20.1・1.21.1 ではテクスチャを `textures/signs/` の下に置く）
 
 ### レシピ（不定形）
 
 - 壁掛け看板 1×1: 看板（木）1 + 鉄インゴット 1
 - 壁掛け看板 2×2: 看板（木）4 + 鉄インゴット 1
 - ポール付き看板: 看板（木）3 + 鉄インゴット 1
-- 鉄は鉱石辞書の `ingotIron`・`plateIron` も使える
+- 他 Mod の鉄インゴットも使える（1.12.2 は鉱石辞書の `ingotIron`、1.20.1 はタグ `forge:ingots/iron`、1.21.1 はタグ `c:ingots/iron`）。1.12.2 は鉱石辞書の `plateIron` も使える
+- 1.20.1・1.21.1 は、どの木の看板でもよい
 - 看板アイテム 1 個だけをクラフト枠に入れると無地に戻る
 
 ### 注意
 
 - **クライアントとサーバーの両方に必要**です。
-- 開発・動作確認は Forge 14.23.5.2860 です。
+- 開発に使う版は、Forge 14.23.5.2860（1.12.2）・Forge 47.1.32（1.20.1。47.1.32 以降で動く）・NeoForge 21.1.264（1.21.1）です。
+- 接続できるのは、同じマイナー版同士（例: 1.1.x 同士）です。
 - 言語: 英語・日本語

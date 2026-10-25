@@ -6,10 +6,15 @@
 
 | 版 | JDK | コマンド | jar |
 |---|---|---|---|
-| 1.12.2 + Forge | 8 | `cd mc1.12.2 && ./gradlew build` | `mc1.12.2/build/libs/safetysigns-1.12.2-<版>.jar`（reobf 済み） |
+| 1.12.2 + Forge | 8 | `cd mc1.12.2 && ./gradlew build` | `mc1.12.2/build/libs/safetysigns-1.12.2-forge-<版>.jar`（reobf 済み） |
+| 1.20.1 + Forge | 17 | `cd mc1.20.1 && ./gradlew build` | `mc1.20.1/build/libs/safetysigns-1.20.1-forge-<版>.jar`（reobf 済み） |
+| 1.21.1 + NeoForge | 21 | `cd mc1.21.1 && ./gradlew build` | `mc1.21.1/build/libs/safetysigns-1.21.1-neoforge-<版>.jar` |
 
-- クラウドでは、JDK を `JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH ./gradlew build -q` のように指定して流す。
-- 初回は Minecraft と Forge のダウンロード・展開で数分かかる。環境のネットワーク設定で `maven.minecraftforge.net`・`libraries.minecraft.net`・`launchermeta.mojang.com`・`piston-meta.mojang.com`・`piston-data.mojang.com`・`resources.download.minecraft.net` を許可しておく。
+- 1.12.2 は ForgeGradle 3 + Gradle 4.9（依存は `compile` / `testCompile`）。1.20.1 は ForgeGradle 6 + Gradle 8.8、1.21.1 は ModDevGradle + Gradle 8.14.3（依存は `implementation` / `testImplementation`）。構成は weakspot（`zeusisgood/weakspot`）の同じ版のディレクトリと同じ。
+- クラウドでは、JDK を `JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH ./gradlew build -q` のように指定して流す（17 は `openjdk-17-jdk-headless`、21 は `openjdk-21-jdk-headless` を `apt-get install -y` で入れる）。
+- 初回は Minecraft とローダーのダウンロード・展開で数分かかる。環境のネットワーク設定で `maven.minecraftforge.net`・`maven.neoforged.net`・`libraries.minecraft.net`・`launchermeta.mojang.com`・`piston-meta.mojang.com`・`piston-data.mojang.com`・`resources.download.minecraft.net` を許可しておく。
+- 1.21.1 のテストは Minecraft の依存なしで流れるので、`common/` の定義ファイルの読み取りが使う Gson だけを `testRuntimeOnly` で足している（Minecraft 1.21.1 と同じ 2.10.1）。
+- 動作の確かめ（描画・GUI・設置の手触り）は、jar をホスト側の Minecraft と testserver で。`./gradlew runClient` / `runServer` も使える（`run/` に作られる。コミットしない）。
 
 ## テクスチャを作る
 
@@ -128,10 +133,10 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 
 ### 版を上げる PR で直すもの
 
-1. `mc1.12.2/build.gradle` の `version` と `SafetySignsMod.VERSION` を揃えて上げる（パッチ・マイナーの決め方は `CLAUDE.md` の「バージョン」）。マイナーを上げるときは `SafetySignsMod.ACCEPTED_VERSIONS` も新しいマイナーの範囲にする。
+1. 版を 6 か所で揃えて上げる（パッチ・マイナーの決め方は `CLAUDE.md` の「バージョン」）: `mc1.12.2/build.gradle` の `version`、`mc1.20.1/gradle.properties` と `mc1.21.1/gradle.properties` の `mod_version`、3 つの版の `SafetySignsMod.VERSION`。1 つの版だけを直したときも、3 つの jar を同じ番号で出す。マイナーを上げるときは、1.12.2 の `SafetySignsMod.ACCEPTED_VERSIONS` と、1.20.1・1.21.1 の `SafetySignsNetwork.PROTOCOL` も新しいマイナーにする。
 2. `CHANGELOG.md` の一番上に `## <版>` の節を足す。この節がそのまま Release の本文になる（マイナーなら、旧マイナーとは接続できないことを書く）。
-3. `mc1.12.2/` で `./gradlew build` を流す。`resources/ReleaseFilesTest` が、`mc1.12.2/build.gradle`・`SafetySignsMod.VERSION`・`CHANGELOG.md` の最新の見出しの 3 つが一致するかを確かめる（ずれていれば PR の CI が落ちる）。
-4. jar を `mc1.12.2/build/release/` にコピーし（Merge の前に試せるように）、PR を作る。
+3. 3 つの版で `./gradlew build` を流す。`resources/ReleaseFilesTest` が、6 か所の版と `CHANGELOG.md` の最新の見出しが一致するか、接続できる範囲が今のマイナーかを確かめる（ずれていれば PR の CI が落ちる）。
+4. 3 つの jar を `mc1.12.2/build/release/` にコピーし（Merge の前に試せるように）、PR を作る。
 
 文書だけの変更など、版を上げない PR では何も起きない。
 
