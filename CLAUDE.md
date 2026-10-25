@@ -87,7 +87,7 @@ ISO 7010 の安全標識をモチーフにした、装飾用の警告看板を�
 - Merge はユーザーが行う。**タグと GitHub Release は、`main` に取り込まれたあとに Actions が作る。Claude はタグを付けない**（`.github/workflows/ci.yml` の `release` ジョブ、`v<版>`。手順は `doc/development.md` の「リリースの手順」）。
 - PR のレビューは、普段はセッション内の `reviewer`。必要な PR だけユーザーが `@claude` で呼ぶ（`.github/workflows/claude.yml`）。
 - 仕様書にもとづく作業は、承認を待たずに実装から push と PR まで進める。ただし**止まる条件**（互換性を破る変更が必要、仕様の意図が読み取れない、ビルドやテストが通らない）に当たったら、push せずに止まって報告する。
-- リリースしたら、jar を `build/release/` にコピーしてユーザーに添付し、PR のリンクと「試してほしいこと」を渡す。
+- リリースしたら、jar を `mc1.12.2/build/release/` にコピーしてユーザーに添付し、PR のリンクと「試してほしいこと」を渡す。
 
 ## ユーザーとの進め方
 
