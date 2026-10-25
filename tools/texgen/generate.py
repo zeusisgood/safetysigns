@@ -15,11 +15,13 @@
 
 使い方: python3 tools/texgen/generate.py [--size 128]
   --size  図柄・無地・「?」の基本の解像度（16 以上 512 以下の 2 の累乗。既定 128）。hires の図柄はその倍数（512 まで）。
-          裏面と支柱はいつも 16×16
-出力: src/main/resources/assets/safetysigns/textures/{signs,blocks}/*.png と doc/textures/{preview,parts}.png
+          裏面と支柱はいつも 16×16、アイテムのアイコンはいつも 32×32
+出力: src/main/resources/assets/safetysigns/textures/{signs,blocks,items}/*.png、doc/textures/{preview,parts,items}.png、
+      doc/store/icon.png（CurseForge のアイコン）、src/main/resources/logo.png（Forge の Mod 一覧のロゴ）
 """
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -35,6 +37,9 @@ DEFINITIONS = ROOT / "src/main/resources/assets/safetysigns/safetysigns/signs.js
 MANUAL = Path(__file__).resolve().parent / "manual"
 PREVIEW = ROOT / "doc/textures/preview.png"
 PARTS_PREVIEW = ROOT / "doc/textures/parts.png"
+ITEMS_PREVIEW = ROOT / "doc/textures/items.png"
+STORE_ICON = ROOT / "doc/store/icon.png"
+MOD_LOGO = ROOT / "src/main/resources/logo.png"
 DEFAULT_SIZE = 128
 
 # 無地の金属板
@@ -285,6 +290,88 @@ def pole():
     return image
 
 
+# ---- アイテムのアイコン（仕様書 SPEC_2026-10-25.md） ----
+# 32×32 で固定（--size に従わない）。座標はピクセルで書き、三角は設計の単位（1 ピクセル = 2 単位）に直して塗る。
+
+ITEM_SIZE = 32
+ITEM_COLORS = {PLATE, PLATE_EDGE, YELLOW, BLACK, POLE, POLE_LIGHT, POLE_DARK}
+# CurseForge のアイコン・Forge の Mod 一覧のロゴの背景（透明な所を塗る）
+LOGO_BG = (0x2B, 0x2F, 0x33, 255)
+
+
+def item_plate(image, x0, y0, x1, y1):
+    """板（両端を含むピクセルの範囲）と 1 ピクセルの縁。"""
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([x0, y0, x1, y1], fill=PLATE, outline=PLATE_EDGE)
+
+
+def item_triangle(image, cx, base, width, border):
+    """板に描く警告の三角（記号なし）。cx は中心の列、base は底辺の下端、width は底辺の幅（ピクセル）。"""
+    unit = raster.UNITS / ITEM_SIZE
+    height = width * math.sqrt(3) / 2
+    left, right = cx + 0.5 - width / 2, cx + 0.5 + width / 2
+    bottom = base + 1
+    points = [((cx + 0.5) * unit, (bottom - height) * unit), (right * unit, bottom * unit), (left * unit, bottom * unit)]
+    raster.fill(image, raster.polygon(points), BLACK)
+    raster.fill(image, raster.offset_polygon(points, -border * unit), YELLOW)
+
+
+def item_wall_1x1():
+    """壁掛け 1×1: 中央に 21×21 の板。"""
+    image = parts.new_canvas(ITEM_SIZE)
+    item_plate(image, 5, 5, 25, 25)
+    item_triangle(image, 15, 22, 17, 1)
+    return image
+
+
+def item_wall_2x2():
+    """壁掛け 2×2: 枠いっぱいの板に、4 枚分を示す十字の分割線と大きい三角。"""
+    image = parts.new_canvas(ITEM_SIZE)
+    item_plate(image, 1, 1, 29, 29)
+    draw = ImageDraw.Draw(image)
+    draw.line([(15, 1), (15, 29)], fill=PLATE_EDGE)
+    draw.line([(1, 15), (29, 15)], fill=PLATE_EDGE)
+    item_triangle(image, 15, 25, 25, 2)
+    return image
+
+
+def item_pole():
+    """ポール付き: 上に 20×20 の板、その下に 4 ピクセル幅の支柱（ブロックの支柱と同じ明暗の列）。"""
+    image = parts.new_canvas(ITEM_SIZE)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([13, 19, 16, 31], fill=POLE)
+    draw.line([(13, 19), (13, 31)], fill=POLE_LIGHT)
+    draw.line([(16, 19), (16, 31)], fill=POLE_DARK)
+    item_plate(image, 5, 0, 24, 19)
+    item_triangle(image, 14.5, 16, 15, 1)
+    return image
+
+
+ITEMS = {"wall_sign_1x1": (item_wall_1x1, "Wall sign 1x1"), "wall_sign_2x2": (item_wall_2x2, "Wall sign 2x2"),
+         "pole_sign": (item_pole, "Pole sign")}
+
+
+def logo(icon, factor):
+    """アイテムのアイコンを最近傍で factor 倍にし、透明な所を LOGO_BG で塗る。"""
+    large = icon.resize((icon.width * factor, icon.height * factor), Image.NEAREST)
+    return Image.alpha_composite(Image.new("RGBA", large.size, LOGO_BG), large)
+
+
+def write_items():
+    """アイテムのアイコン 3 枚・一覧画像・CurseForge のアイコン・Mod 一覧のロゴを出す。"""
+    entries = []
+    (TEXTURES / "items").mkdir(exist_ok=True)
+    for name, (make, title) in ITEMS.items():
+        image = make()
+        check_colors(f"items/{name}", image, ITEM_COLORS)
+        image.save(TEXTURES / "items" / f"{name}.png")
+        entries.append((name, title, image))
+    write_sheet(ITEMS_PREVIEW, entries)
+    icon = entries[0][2]
+    logo(icon, 16).save(STORE_ICON)
+    logo(icon, 4).save(MOD_LOGO)
+
+
 # 「?」の形（設計の単位）: 黒い四角に、白い鉤と点
 QUESTION = (raster.polyline([(23.0, 23.0), (24.0, 18.0), (27.6, 14.4), (32.0, 13.4), (36.4, 14.4), (40.0, 18.0),
                              (40.8, 22.6), (39.0, 27.0), (34.6, 30.4), (32.0, 33.6), (32.0, 39.0)], 3.0)
@@ -427,6 +514,7 @@ def main():
 
     write_sheet(PREVIEW, entries)
     write_parts(size)
+    write_items()
     print(f"wrote {len(entries)} textures ({size}x{size}), {PREVIEW.relative_to(ROOT)} and "
           f"{PARTS_PREVIEW.relative_to(ROOT)}")
 

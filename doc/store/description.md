@@ -1,7 +1,13 @@
 # ストアの説明文（CurseForge・Modrinth）
 
 CurseForge と Modrinth の説明欄にそのまま貼る文章。英語を先に、日本語をあとに並べる（どちらも Markdown のまま貼れる）。
-画像は、ストアの画像欄に `doc/textures/preview.png` を上げて使う。
+公開先は CurseForge だけ（文章は Markdown のままなので、Modrinth に出すときもそのまま貼れる）。
+
+画像:
+
+- プロジェクトのアイコン: `doc/store/icon.png`（512×512）
+- 図柄の一覧: `doc/textures/preview.png`
+- スクリーンショット（ユーザーが撮る）: 壁掛け 1×1 を並べた所、壁掛け 2×2、ポール付き、図柄を選ぶ画面、夜に光る看板、切り抜き OFF・裏面の違い
 
 | 欄 | 内容 |
 |---|---|
