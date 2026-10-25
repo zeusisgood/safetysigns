@@ -45,6 +45,7 @@ flowchart LR
 | GUI を開く | `SafetySignsGuiHandler` | `CommonProxy.openSignPicker`（クライアントでは `client/ClientProxy`。専用サーバーはクライアントのクラスを読まない） | 同左 |
 | 右クリック | `onBlockActivated` | `use` | `useItemOn`（看板アイテムなら素通し）・`useWithoutItem` |
 | 板の描画 | TESR（ディスプレイリスト） | `BlockEntityRenderer`。四角の並び（`common/SignMesh`）を取っておき、`RenderType.cutout()` で毎フレーム描く | 同左 |
+| 図柄を選ぶ画面のボタンの説明 | `drawTooltips` で、マウスを乗せるとすぐ出す | ボタンの `Tooltip`（バニラと同じく少し遅れて出る。キーボードの焦点でも出る） | 同左 |
 | 設定のフォルダ（最近使った図柄） | `Loader.getConfigDir` | `FMLPaths.CONFIGDIR` | 同左 |
 | 図柄のテクスチャ | `TextureStitchEvent.Pre` で定義ファイルの texture を登録 | atlas（`assets/minecraft/atlases/blocks.json`）が `textures/signs/` の下を全部集める。`signs/` の下でない図柄は「?」 | 同左 |
 | 定義ファイルの読み込み | `TextureStitchEvent.Pre` のたび | リソースの読み直しのたび（`RegisterClientReloadListenersEvent`） | 同左 |

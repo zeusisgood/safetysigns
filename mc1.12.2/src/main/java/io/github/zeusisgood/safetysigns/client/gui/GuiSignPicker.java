@@ -111,6 +111,8 @@ public class GuiSignPicker extends GuiScreen {
     private SignCategory tab;
     /** 「最近」のタブを選んでいるか（検索中は false）。 */
     private boolean recentTab;
+    /** 「最近」のタブを開いたときの並び。開いているあいだ（画面の大きさを変えても）は動かさない。 */
+    private List<SignDefinition> recentShown = Collections.emptyList();
     private List<SignDefinition> visible = Collections.emptyList();
     private int scrollRow;
     private boolean draggingScrollbar;
@@ -202,7 +204,7 @@ public class GuiSignPicker extends GuiScreen {
         if (!text.trim().isEmpty()) {
             visible = catalog().search(text);
         } else if (recentTab) {
-            visible = recentDefinitions();
+            visible = recentShown;
         } else if (tab != null) {
             visible = catalog().byCategory(tab);
         } else {
@@ -308,6 +310,7 @@ public class GuiSignPicker extends GuiScreen {
             search.setText("");
             tab = null;
             recentTab = true;
+            recentShown = recentDefinitions();
             scrollRow = 0;
             refreshVisible();
             playClick();

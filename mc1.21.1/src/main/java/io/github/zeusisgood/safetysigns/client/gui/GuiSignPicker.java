@@ -104,6 +104,8 @@ public class GuiSignPicker extends Screen {
     private SignCategory tab;
     /** 「最近」のタブを選んでいるか（検索中は false）。 */
     private boolean recentTab;
+    /** 「最近」のタブを開いたときの並び。開いているあいだ（画面の大きさを変えても）は動かさない。 */
+    private List<SignDefinition> recentShown = Collections.emptyList();
     private List<SignDefinition> visible = Collections.emptyList();
     private int scrollRow;
     private boolean draggingScrollbar;
@@ -207,7 +209,7 @@ public class GuiSignPicker extends Screen {
         if (!text.trim().isEmpty()) {
             visible = catalog().search(text);
         } else if (recentTab) {
-            visible = recentDefinitions();
+            visible = recentShown;
         } else if (tab != null) {
             visible = catalog().byCategory(tab);
         } else {
@@ -307,6 +309,7 @@ public class GuiSignPicker extends Screen {
             search.setValue("");
             tab = null;
             recentTab = true;
+            recentShown = recentDefinitions();
             scrollRow = 0;
             refreshVisible();
             playClick();
@@ -627,7 +630,7 @@ public class GuiSignPicker extends Screen {
 
         @Override
         protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-            graphics.fill(getX(), getY(), getX() + width, getY() + height, isHoveredOrFocused() ? CLOSE_HOVER : CLOSE_IDLE);
+            graphics.fill(getX(), getY(), getX() + width, getY() + height, isHovered() ? CLOSE_HOVER : CLOSE_IDLE);
             Font font = Minecraft.getInstance().font;
             graphics.drawString(font, getMessage(), getX() + (width - font.width(getMessage())) / 2, getY() + (height - 8) / 2,
                     0xFFFFFF, false);
