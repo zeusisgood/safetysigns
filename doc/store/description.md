@@ -39,7 +39,7 @@ Put a radiation sign around your reactor, an electricity sign on your switchboar
   - GHS: all 9 pictograms (exploding bomb, flame, flame over circle, gas cylinder, corrosion, skull and crossbones, exclamation mark, health hazard, environment)
   - ISO 21482: ionizing radiation (large sources)
 - Right-click a placed sign to pick a pictogram, with category tabs, recently used pictograms and search (English and Japanese)
-- Per-sign settings: **cutout** (plate shaped like the pictogram, or square), **back** (plain silver or the same pictogram), **night glow** (pictogram drawn at full brightness)
+- Per-sign settings: **shape** (plate cut to the sign's shape, or square), **back** (the same pictogram, or bare metal), **glow** (keeps the pictogram bright in the dark)
 - Sneak + right-click with a sign item to copy a sign's look; broken signs keep their pictogram
 - **Resource packs can add new pictograms** with a small JSON file and a texture (any power-of-two square, such as 128x128; on 1.20.1 and 1.21.1 the texture goes under `textures/signs/`)
 
@@ -80,7 +80,7 @@ ISO 7010 などの安全標識・ハザードシンボル（**GHS** 絵表示・
   - GHS: 9 種すべて（爆弾の爆発・炎・円上の炎・ガスボンベ・腐食性・どくろ・感嘆符・健康有害性・環境）
   - ISO 21482: 電離放射線（大量の線源）
 - 置いた看板を右クリックして図柄を選ぶ（分類のタブ・最近使った図柄・日英の検索）
-- 看板ごとの設定: **切り抜き**（図柄の形の板 / 四角い板）、**裏面**（銀 / 同じ図柄）、**夜間に光る**（図柄を明るさ最大で描く）
+- 看板ごとの設定: **形**（標識の形に切り抜いた板 / 四角い板）、**裏側**（同じ図柄 / 金属）、**蓄光**（暗い所でも図柄が明るく見える）
 - 看板アイテムを持ってスニーク + 右クリックで見た目を写す。壊しても図柄は残る
 - **リソースパックで図柄を足せる**（小さな JSON と、2 の累乗の正方形のテクスチャ。128×128 など。1.20.1・1.21.1 ではテクスチャを `textures/signs/` の下に置く）
 
