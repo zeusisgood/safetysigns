@@ -21,10 +21,10 @@ flowchart TD
     Slash --> Check["記号と地の縁の間隔・<br/>決めた色と透明だけか<br/>外れたら止まる"]
     Load --> Save["textures/signs/名前.png"]
     Check --> Save
-    Run --> Blocks["無地・「?」・裏・支柱<br/>textures/blocks/"]
+    Run --> Blocks["無地・「?」・裏・支柱<br/>textures/block/"]
     Defs["signs.json<br/>コードと英語の名前"] --> Preview
     Save --> Preview["doc/textures/preview.png<br/>拡大・見出し付き"]
     Blocks -- 無地と「?」だけ --> Preview
     Run --> Parts["doc/textures/parts.png<br/>部品の一覧"]
-    Run --> Items["アイテムのアイコン 32×32<br/>textures/items/ と items.png<br/>拡大して store/icon.png・logo.png"]
+    Run --> Items["アイテムのアイコン 32×32<br/>textures/item/ と items.png<br/>拡大して store/icon.png・logo.png"]
 ```

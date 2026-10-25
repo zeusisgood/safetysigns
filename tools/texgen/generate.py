@@ -16,8 +16,8 @@
 使い方: python3 tools/texgen/generate.py [--size 128]
   --size  図柄・無地・「?」の基本の解像度（16 以上 512 以下の 2 の累乗。既定 128）。hires の図柄はその倍数（512 まで）。
           裏面と支柱はいつも 16×16、アイテムのアイコンはいつも 32×32
-出力: src/main/resources/assets/safetysigns/textures/{signs,blocks,items}/*.png、doc/textures/{preview,parts,items}.png、
-      doc/store/icon.png（CurseForge のアイコン）、src/main/resources/logo.png（Forge の Mod 一覧のロゴ）
+出力: shared/assets/safetysigns/textures/{signs,block,item}/*.png、doc/textures/{preview,parts,items}.png、
+      doc/store/icon.png（CurseForge のアイコン）、shared/logo.png（Forge の Mod 一覧のロゴ）
 """
 import argparse
 import json
@@ -32,14 +32,14 @@ import raster
 from parts import BLACK, BLUE, CLEAR, GREEN, HAZARD_RED, RED, WHITE, YELLOW
 
 ROOT = Path(__file__).resolve().parents[2]
-TEXTURES = ROOT / "src/main/resources/assets/safetysigns/textures"
-DEFINITIONS = ROOT / "src/main/resources/assets/safetysigns/safetysigns/signs.json"
+TEXTURES = ROOT / "shared/assets/safetysigns/textures"
+DEFINITIONS = ROOT / "shared/assets/safetysigns/safetysigns/signs.json"
 MANUAL = Path(__file__).resolve().parent / "manual"
 PREVIEW = ROOT / "doc/textures/preview.png"
 PARTS_PREVIEW = ROOT / "doc/textures/parts.png"
 ITEMS_PREVIEW = ROOT / "doc/textures/items.png"
 STORE_ICON = ROOT / "doc/store/icon.png"
-MOD_LOGO = ROOT / "src/main/resources/logo.png"
+MOD_LOGO = ROOT / "shared/logo.png"
 DEFAULT_SIZE = 128
 
 # 無地の金属板
@@ -360,11 +360,11 @@ def logo(icon, factor):
 def write_items():
     """アイテムのアイコン 3 枚・一覧画像・CurseForge のアイコン・Mod 一覧のロゴを出す。"""
     entries = []
-    (TEXTURES / "items").mkdir(exist_ok=True)
+    (TEXTURES / "item").mkdir(exist_ok=True)
     for name, (make, title) in ITEMS.items():
         image = make()
-        check_colors(f"items/{name}", image, ITEM_COLORS)
-        image.save(TEXTURES / "items" / f"{name}.png")
+        check_colors(f"item/{name}", image, ITEM_COLORS)
+        image.save(TEXTURES / "item" / f"{name}.png")
         entries.append((name, title, image))
     write_sheet(ITEMS_PREVIEW, entries)
     icon = entries[0][2]
@@ -506,11 +506,11 @@ def main():
         print(f"{name}: {source} ({image.width}x{image.height})")
 
     for name, image, title in [("blank", blank(size), "Blank"), ("unknown", unknown(size), "Unknown pattern ID")]:
-        image.save(TEXTURES / "blocks" / f"sign_{name}.png")
+        image.save(TEXTURES / "block" / f"sign_{name}.png")
         entries.append((name, title, image))
     # 支柱と裏面は図柄ではないので、一覧画像には入れない
-    pole().save(TEXTURES / "blocks" / "sign_pole.png")
-    back().save(TEXTURES / "blocks" / "sign_back.png")
+    pole().save(TEXTURES / "block" / "sign_pole.png")
+    back().save(TEXTURES / "block" / "sign_back.png")
 
     write_sheet(PREVIEW, entries)
     write_parts(size)

@@ -1,5 +1,16 @@
 # 開発の手順
 
+## ビルドする
+
+リポジトリの形は [architecture.md](architecture.md) の「リポジトリの形」。Minecraft の版ごとのディレクトリの中で Gradle を流す（テストの作業ディレクトリはリポジトリの直下。`common/` のテストはどの版のビルドでも流れる）。
+
+| 版 | JDK | コマンド | jar |
+|---|---|---|---|
+| 1.12.2 + Forge | 8 | `cd mc1.12.2 && ./gradlew build` | `mc1.12.2/build/libs/safetysigns-1.12.2-<版>.jar`（reobf 済み） |
+
+- クラウドでは、JDK を `JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH ./gradlew build -q` のように指定して流す。
+- 初回は Minecraft と Forge のダウンロード・展開で数分かかる。環境のネットワーク設定で `maven.minecraftforge.net`・`libraries.minecraft.net`・`launchermeta.mojang.com`・`piston-meta.mojang.com`・`piston-data.mojang.com`・`resources.download.minecraft.net` を許可しておく。
+
 ## テクスチャを作る
 
 図柄のテクスチャは `tools/texgen/` のスクリプトで作る（Python 3 + Pillow）。出力の PNG と一覧画像はコミットする。
@@ -11,14 +22,14 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 
 | 出力 | 内容 |
 |---|---|
-| `src/main/resources/assets/safetysigns/textures/signs/<名前>.png` | 図柄（128×128。標識の形の外側は透明） |
-| `src/main/resources/assets/safetysigns/textures/blocks/sign_*.png` | 無地・「?」（`--size` の解像度）・裏面・支柱（いつも 16×16） |
+| `shared/assets/safetysigns/textures/signs/<名前>.png` | 図柄（128×128。標識の形の外側は透明） |
+| `shared/assets/safetysigns/textures/block/sign_*.png` | 無地・「?」（`--size` の解像度）・裏面・支柱（いつも 16×16） |
 | `doc/textures/preview.png` | 全図柄を同じ大きさに拡大して（128 なら 2 倍）、コードと英語の名前を添えた一覧（PR に貼る） |
 | `doc/textures/parts.png` | 記号の部品だけを白地に黒で並べた一覧（PR に貼る） |
-| `src/main/resources/assets/safetysigns/textures/items/*.png` | 無地の看板アイテムのアイコン 3 種（いつも 32×32。図柄を持つアイテムは図柄のアイコンになる） |
+| `shared/assets/safetysigns/textures/item/*.png` | 無地の看板アイテムのアイコン 3 種（いつも 32×32。図柄を持つアイテムは図柄のアイコンになる） |
 | `doc/textures/items.png` | アイテムのアイコンの一覧（PR に貼る） |
 | `doc/store/icon.png` | CurseForge のアイコン（壁掛け 1×1 のアイコンを 16 倍、512×512。透明な所は `#2B2F33`。jar には入らない） |
-| `src/main/resources/logo.png` | Forge の Mods 画面のロゴ（同じ絵を 4 倍、128×128。`mcmod.info` の `logoFile`） |
+| `shared/logo.png` | Forge の Mods 画面のロゴ（同じ絵を 4 倍、128×128。`mcmod.info` の `logoFile`） |
 
 本体の図案は 128 で見て決めている。`--size` を変えても描けるが、64 以下では細い所（0.5 単位の線・隙間）がつぶれる（コミットするのは 128）。
 
@@ -94,7 +105,7 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 
 ### 図柄を足す
 
-1. 定義ファイル `src/main/resources/assets/safetysigns/safetysigns/signs.json` に項目を足す（形は [resourcepack.md](resourcepack.md)。名前は日英の両方）。**図柄 ID は一度出したら変えない・消さない**。
+1. 定義ファイル `shared/assets/safetysigns/safetysigns/signs.json` に項目を足す（形は [resourcepack.md](resourcepack.md)。名前は日英の両方）。**図柄 ID は一度出したら変えない・消さない**。
 2. 記号の部品が足りなければ、`tools/texgen/parts.py` に関数を足す（上の「部品」）。
 3. `tools/texgen/generate.py` の `SIGNS` に、`"<名前>": <形>(<部品>(<中心と大きさ>))` を足す。記号を 2 つ以上並べるときは、形の関数に部品を続けて渡す。
 4. `python3 tools/texgen/generate.py` を流して、`doc/textures/preview.png` と `doc/textures/parts.png` を見る。地の縁と記号がくっついていないか（くっつくとスクリプトが止まる）、遠目に何か分かるかを確かめる。
@@ -113,25 +124,25 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 
 ## リリースの手順
 
-タグと GitHub Release は、`main` に取り込まれたあとに Actions（`.github/workflows/release.yml`）が作る。Claude はタグを付けない（`.claude/settings.json` で `git tag` とタグの push を止めている）。流れの図は [`diagrams/release.md`](diagrams/release.md)。
+タグと GitHub Release は、`main` に取り込まれたあとに Actions（`.github/workflows/ci.yml` の `release` ジョブ）が作る。Claude はタグを付けない（`.claude/settings.json` で `git tag` とタグの push を止めている）。流れの図は [`diagrams/release.md`](diagrams/release.md)。
 
 ### 版を上げる PR で直すもの
 
-1. `build.gradle` の `version` と `SafetySignsMod.VERSION` を揃えて上げる（パッチ・マイナーの決め方は `CLAUDE.md` の「バージョン」）。マイナーを上げるときは `SafetySignsMod.ACCEPTED_VERSIONS` も新しいマイナーの範囲にする。
+1. `mc1.12.2/build.gradle` の `version` と `SafetySignsMod.VERSION` を揃えて上げる（パッチ・マイナーの決め方は `CLAUDE.md` の「バージョン」）。マイナーを上げるときは `SafetySignsMod.ACCEPTED_VERSIONS` も新しいマイナーの範囲にする。
 2. `CHANGELOG.md` の一番上に `## <版>` の節を足す。この節がそのまま Release の本文になる（マイナーなら、旧マイナーとは接続できないことを書く）。
-3. `./gradlew build` を流す。`resources/ReleaseFilesTest` が、`build.gradle`・`SafetySignsMod.VERSION`・`CHANGELOG.md` の最新の見出しの 3 つが一致するかを確かめる（ずれていれば PR の CI が落ちる）。
-4. jar を `build/release/` にコピーし（Merge の前に試せるように）、PR を作る。
+3. `mc1.12.2/` で `./gradlew build` を流す。`resources/ReleaseFilesTest` が、`mc1.12.2/build.gradle`・`SafetySignsMod.VERSION`・`CHANGELOG.md` の最新の見出しの 3 つが一致するかを確かめる（ずれていれば PR の CI が落ちる）。
+4. jar を `mc1.12.2/build/release/` にコピーし（Merge の前に試せるように）、PR を作る。
 
 文書だけの変更など、版を上げない PR では何も起きない。
 
 ### Merge のあと（Actions が行う）
 
-1. `build.gradle` の `version` を読み、タグ `v<版>` がもうあれば何もしない。
-2. なければ `./gradlew build`（ビルドとテスト）を流す。失敗したら、タグも Release も作らない。
-3. `CHANGELOG.md` の `## <版>` から次の `## ` の手前までを本文にし、`safetysigns-1.12.2-<版>.jar` を添付して、取り込んだコミットにタグ `v<版>` と Release を作る（`gh release create`）。節がない・空なら止まる。
+1. `ci.yml` が Minecraft の版ごとに `./gradlew build`（ビルドとテスト）を流す。どれかが失敗したら、タグも Release も作らない。
+2. 全部が通ったら、`release` ジョブ（`main` への push のときだけ）が `mc1.12.2/build.gradle` の `version` を読み、タグ `v<版>` がもうあれば何もしない。
+3. なければ、`CHANGELOG.md` の `## <版>` から次の `## ` の手前までを本文にし、同じ CI のビルドの jar（全部の版）を添付して、取り込んだコミットにタグ `v<版>` と Release を作る（`gh release create`）。節がない・空なら止まる。
 
 ### 確かめ方・失敗したとき
 
-- GitHub の Actions の「Release」が緑で、Releases に `v<版>` があり、jar が添付され、本文が `CHANGELOG.md` の節と同じなら成功。
+- GitHub の Actions の「CI」の `release` ジョブが緑で、Releases に `v<版>` があり、jar が添付され、本文が `CHANGELOG.md` の節と同じなら成功。
 - ビルドやテストで落ちたときは、直す PR を Merge すれば、その push でもう一度流れる（タグがまだないので）。
-- 一時的な失敗（Maven の取得など）なら、Actions の画面で失敗した「Release」を Re-run する。
+- 一時的な失敗（Maven の取得など）なら、Actions の画面で失敗した「CI」の run を Re-run する（`release` ジョブもやり直される）。

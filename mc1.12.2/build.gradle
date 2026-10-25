@@ -1,0 +1,115 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+// Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+apply plugin: 'eclipse'
+
+// 版は SafetySignsMod.VERSION と必ず揃える（CLAUDE.md のバージョンの方針）
+version = '1.0.5'
+group = 'io.github.zeusisgood'
+// jar 名を safetysigns-1.12.2-<版>.jar にする
+archivesBaseName = 'safetysigns-1.12.2'
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+repositories {
+    mavenCentral()
+}
+
+minecraft {
+    mappings channel: 'snapshot', version: '20171003-1.12'
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+            property 'forge.logging.console.level', 'debug'
+        }
+
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+            property 'forge.logging.console.level', 'debug'
+            args 'nogui'
+        }
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+
+    testCompile 'junit:junit:4.12'
+}
+
+// 版に依存しない計算（common）と全部の版で同じリソース（shared）は、各版のビルドがソースで読む
+sourceSets {
+    main.java.srcDir '../common/src/main/java'
+    main.resources.srcDir '../shared'
+    main.resources.srcDir "$buildDir/generated/lang"
+    test.java.srcDir '../common/src/test/java'
+}
+
+// 翻訳の正本は ../lang/*.json（1.13 以降のキー）。1.12.2 は「キー=値」の .lang にし、ブロックの名前のキーだけ 1.12.2 の形にする
+task generateLang {
+    def source = file('../lang')
+    def output = file("$buildDir/generated/lang/assets/safetysigns/lang")
+    inputs.dir source
+    outputs.dir output
+    doLast {
+        output.mkdirs()
+        source.eachFileMatch(~/.*\.json/) { f ->
+            def entries = new groovy.json.JsonSlurper().parse(f, 'UTF-8')
+            def lines = entries.collect { k, v ->
+                def m = k =~ /^block\.safetysigns\.(\w+)$/
+                "${m.matches() ? "tile.safetysigns.${m.group(1)}.name" : k}=$v"
+            }
+            new File(output, f.name.replace('.json', '.lang')).setText(lines.join('\n') + '\n', 'UTF-8')
+        }
+    }
+}
+processResources.dependsOn generateLang
+
+test {
+    // テストは、リポジトリ直下のファイル（翻訳・CHANGELOG.md・各版の版の番号）を読む
+    workingDir = file('..')
+}
+
+processResources {
+    inputs.property 'version', project.version
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': '1.12.2'
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+jar {
+    // MIT の条件（配布物に著作権表示を付ける）のため、jar にも LICENSE を入れる
+    from('../LICENSE') {
+        rename { 'LICENSE_safetysigns' }
+    }
+    manifest {
+        attributes([
+            "Specification-Title": "safetysigns",
+            "Specification-Version": "1",
+            "Implementation-Title": project.name,
+            "Implementation-Version": "${version}",
+            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')

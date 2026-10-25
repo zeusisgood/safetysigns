@@ -3,6 +3,26 @@
 現在の実装（1.0.2、仕様書「9. 作業の順番」の 8 までと [SPEC_2026-10-12-2](spec/SPEC_2026-10-12-2.md)〜[SPEC_2026-10-12-8](spec/SPEC_2026-10-12-8.md)）の全体構成と主要な流れ。
 仕組みを変えたら、同じ PR でこの文書と図を直す。条件付きの図は [`diagrams/`](diagrams/) にある。
 
+## リポジトリの形
+
+Minecraft の版ごとのディレクトリ（`mc<版>/`）は、それぞれ別々の Gradle のビルド（ForgeGradle の版が版ごとに違い、1 つのマルチプロジェクトにできない）。版に依存しないものは直下に置き、各版のビルドがソースとして読む（[ADR 0015](adr/0015-support-three-minecraft-versions-in-one-repository.md)）。
+
+| ディレクトリ | 中身 |
+|---|---|
+| `common/` | Minecraft に依存しない計算（下の表の `common/`）とそのテスト、ファイルの揃い具合のテスト（`resources/ReleaseFilesTest`・`LangFilesTest`） |
+| `lang/` | 翻訳の正本（`en_us.json`・`ja_jp.json`。キーは 1.13 以降の形）。1.12.2 はビルドのときに `.lang` を作る（ブロックの名前のキー `block.safetysigns.<名前>` を `tile.safetysigns.<名前>.name` にする） |
+| `shared/` | 全部の版で同じリソース: テクスチャ（`textures/signs`・`block`・`item`）、図柄の定義ファイル `signs.json`、ロゴ。`tools/texgen/generate.py` が書き出す |
+| `mc1.12.2/` | 1.12.2 + Forge のコードと、版で形が違うリソース（ブロックの状態・モデル・レシピ・`mcmod.info`） |
+
+```mermaid
+flowchart LR
+    Texgen["tools/texgen<br/>generate.py"] --> Shared["shared/<br/>テクスチャ・signs.json・ロゴ"]
+    Common["common/<br/>計算とテスト"] --> B112
+    Lang["lang/*.json"] -- .lang に変換 --> B112
+    Shared --> B112["mc1.12.2/<br/>./gradlew build"]
+    B112 --> Jar["safetysigns-1.12.2-版.jar"]
+```
+
 ## 全体構成
 
 - クライアントとサーバーの両方に Mod が必要（`@Mod` の `acceptableRemoteVersions` で同じマイナー同士だけ接続できる）。
@@ -10,7 +30,7 @@
 - 図柄の一覧（定義ファイル）はクライアントだけが読む。サーバーは ID の文字列を保存・同期し、届いた ID の形と距離を確かめるだけ（[ADR 0002](adr/0002-load-sign-definitions-on-texture-stitch.md)）。
 - 図柄の分類（GUI のタブ）は ISO 7010 の W P M E F と GHS・その他（`common/SignCategory`）。定義ファイルの知らない分類は「その他」として読む（[ADR 0012](adr/0012-read-unknown-categories-as-other.md)）。
 - 看板は 1 マス以上を使う（壁掛け 1×1・2×2、ポール付き）。図柄は代表のマス（正面から見て左下。ポール付きは最下段の支柱）の TileEntity だけが持ち、ほかのマスは部品の番号だけを状態に持つ（[ADR 0004](adr/0004-multiblock-signs-with-a-representative-cell.md)、[ADR 0005](adr/0005-pole-sign-keeps-the-pattern-in-the-pole-cell.md)、[`diagrams/multiblock.md`](diagrams/multiblock.md)）。
-- 見た目: 看板の板は、代表のマスの TileEntity の描画（`SignRenderer`）が、図柄を描く面（ブロックの `getFaceRow`・`getFaceZ`。壁掛けは看板全体、ポール付きは最上段の板）に描く。切り抜き ON は図柄のテクスチャの形、OFF は四角い板で、無地の下地の上に図柄を重ねる。裏は銀なら灰色、図柄なら表と同じ図柄を左右反転して貼る。縁はいつも灰色（形は `common/SignOutline` がテクスチャのアルファから作る。組み立てた板はテクスチャ・看板の種類・切り抜き・裏面ごとにディスプレイリストに取っておき、テクスチャを貼り直したら作り直す。[ADR 0006](adr/0006-draw-the-plate-cut-to-the-pattern-shape.md)）。リストは 2 つ続きで、1 つ目が下地・裏・縁、2 つ目が表の図柄。夜間に光る看板は、2 つ目だけをライトマップの最大（240, 240）で描く（周りは照らさない。下地・裏・縁・ポール・金具は周りの明るさ）。クライアントの全体設定（`@Config`）はない。ブロックモデル（JSON）は板を持たない（壁掛けは何も描かない。ポール付きは支柱と固定金具）。無地のアイテムは種類ごとのアイコン（`textures/items/`、32×32）。図柄を持つアイテムは `SignItemModel` が NBT に合わせて差し替える（切り抜き ON は図柄のテクスチャ 1 枚、OFF は無地の下地 + 図柄の 2 枚重ね。裏面はアイコンに出さない）。
+- 見た目: 看板の板は、代表のマスの TileEntity の描画（`SignRenderer`）が、図柄を描く面（ブロックの `getFaceRow`・`getFaceZ`。壁掛けは看板全体、ポール付きは最上段の板）に描く。切り抜き ON は図柄のテクスチャの形、OFF は四角い板で、無地の下地の上に図柄を重ねる。裏は銀なら灰色、図柄なら表と同じ図柄を左右反転して貼る。縁はいつも灰色（形は `common/SignOutline` がテクスチャのアルファから作る。組み立てた板はテクスチャ・看板の種類・切り抜き・裏面ごとにディスプレイリストに取っておき、テクスチャを貼り直したら作り直す。[ADR 0006](adr/0006-draw-the-plate-cut-to-the-pattern-shape.md)）。リストは 2 つ続きで、1 つ目が下地・裏・縁、2 つ目が表の図柄。夜間に光る看板は、2 つ目だけをライトマップの最大（240, 240）で描く（周りは照らさない。下地・裏・縁・ポール・金具は周りの明るさ）。クライアントの全体設定（`@Config`）はない。ブロックモデル（JSON）は板を持たない（壁掛けは何も描かない。ポール付きは支柱と固定金具）。無地のアイテムは種類ごとのアイコン（`textures/item/`、32×32）。図柄を持つアイテムは `SignItemModel` が NBT に合わせて差し替える（切り抜き ON は図柄のテクスチャ 1 枚、OFF は無地の下地 + 図柄の 2 枚重ね。裏面はアイコンに出さない）。
 - テクスチャ（図柄・無地・「?」・裏・支柱）は `tools/texgen/` のスクリプトが作り、PNG をコミットする（ビルドに Python は要らない）。内蔵の図柄はすべて 128×128（`--size` の既定。図柄ごとに倍率を変える `hires` も残している）。標識の形と記号の部品（解像度によらない設計の座標の図形）の組み合わせで、出力のマス目に直接ドット絵として塗る。`tools/texgen/manual/` に置いた手の仕上げを優先する仕組みもある（[ADR 0009](adr/0009-generate-textures-from-parts-with-manual-overrides.md)、[ADR 0011](adr/0011-draw-textures-on-a-resolution-independent-grid.md)、[ADR 0014](adr/0014-draw-all-builtin-pictograms-at-128.md)、[`diagrams/texture-generation.md`](diagrams/texture-generation.md)、手順は [`development.md`](development.md)）。
 
 | パッケージ / ファイル | 役割 | 動く場所 |
@@ -24,13 +44,13 @@
 | `tile/TileEntitySafetySign` | 図柄 ID を持つ（代表のマスだけ）。保存とクライアントへの同期 | 両方 |
 | `item/ItemSafetySign`・`item/SignNbt` | 看板アイテム（ツールチップに図柄と、既定と違う切り抜き・裏面・光るか）。複数マスの看板は全部のマスに置けるときだけ置く。スニーク右クリックで看板の見た目を写す。NBT のキー `SignId`・`Cutout`・`BackPattern`・`Glow` の読み書き | 両方 |
 | `recipe/RecipeClearSign`・`recipe/SafetySignsRecipes` | 看板アイテム 1 個だけで無地に戻すレシピ（`safetysigns:clear_sign`）とその登録 | 両方 |
-| `assets/safetysigns/recipes/*.json` | 看板を作るレシピ（不定形。木の看板 + 鉄。鉄は鉱石辞書 `ingotIron`・`plateIron`。[ADR 0010](adr/0010-craft-signs-with-shapeless-json-recipes.md)） | 両方 |
+| `mc1.12.2/…/assets/safetysigns/recipes/*.json` | 看板を作るレシピ（不定形。木の看板 + 鉄。鉄は鉱石辞書 `ingotIron`・`plateIron`。[ADR 0010](adr/0010-craft-signs-with-shapeless-json-recipes.md)） | 両方 |
 | `network/MessageSetSign` | クライアント → サーバー: 見た目（図柄・切り抜き・裏面・光るか）を変える。サーバーが形・距離・場所を確かめる | 両方 |
 | `common/` | Minecraft に依存しない計算: 図柄 ID の形（`SignIds`）、定義ファイルの読み取り（`SignDefinitionParser`）、マージと検索（`SignCatalog`）、看板が使うマスの計算と置けるかの判定（`SignLayout`・`GridPos`）、テクスチャのアルファから切り抜いた板の形（`SignOutline`）、看板の見た目の値（`SignAppearance`） | 両方（使うのは主にクライアント） |
 | `client/SignTextures` | 定義ファイルを全パックから読んでマージし、図柄のテクスチャを登録する。テクスチャの PNG から板の形を作って取っておく | クライアントだけ |
 | `client/SignRenderer`・`client/SignItemModel`・`client/ClientModels` | 看板の板（表・裏・縁。切り抜き・裏面の設定に合わせ、光る看板は表の図柄だけ明るさ最大）の描画、アイテムのモデル、その登録 | クライアントだけ |
 | `client/gui/GuiSignPicker` | 図柄選択の GUI（タブ（W P M E F GHS その他）・グリッド・プレビュー・検索・無地に戻す・切り抜きと裏面の切り替え・プレビューの下に夜間に光るかの切り替え） | クライアントだけ |
-| `assets/<namespace>/safetysigns/signs.json` | 図柄の定義ファイル（形は [`resourcepack.md`](resourcepack.md)） | クライアントだけ |
+| `assets/<namespace>/safetysigns/signs.json` | 図柄の定義ファイル（本体のものは `shared/` にある。形は [`resourcepack.md`](resourcepack.md)） | クライアントだけ |
 
 ```mermaid
 flowchart LR

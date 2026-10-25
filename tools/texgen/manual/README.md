@@ -1,7 +1,7 @@
 # 手で仕上げた図柄
 
 ここに `<名前>.png`（2 の累乗の正方形。ふつうは生成と同じ 128×128）を置くと、`generate.py` はその図柄を生成せず、このファイルをそのまま
-`src/main/resources/assets/safetysigns/textures/signs/<名前>.png` にコピーする。スクリプトを流し直しても、手の仕上げは消えない。
+`shared/assets/safetysigns/textures/signs/<名前>.png` にコピーする。スクリプトを流し直しても、手の仕上げは消えない。
 
 今は本体の図柄はすべてスクリプトで描いていて、ここに図柄は置いていない（仕組みだけ残している）。
 
