@@ -5,6 +5,7 @@ import io.github.zeusisgood.safetysigns.block.BlockSafetySign;
 import io.github.zeusisgood.safetysigns.client.gui.GuiSignPicker;
 import io.github.zeusisgood.safetysigns.common.SignAppearance;
 import io.github.zeusisgood.safetysigns.tile.TileEntitySafetySign;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -40,15 +41,15 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void appendSignTooltip(SignAppearance appearance, List<Component> tooltip) {
         tooltip.add(SignTextures.describe(appearance.getSignId()));
-        // 無地は常に切り抜き ON なので、出るのは図柄のある看板だけ
+        // 設定の行はバニラの補足と同じ灰色。無地は常に切り抜き ON なので、形の行が出るのは図柄のある看板だけ
         if (!appearance.isCutout()) {
-            tooltip.add(Component.translatable("tooltip.safetysigns.no_cutout"));
+            tooltip.add(Component.translatable("tooltip.safetysigns.no_cutout").withStyle(ChatFormatting.GRAY));
         }
         if (appearance.isBackPattern()) {
-            tooltip.add(Component.translatable("tooltip.safetysigns.double_sided"));
+            tooltip.add(Component.translatable("tooltip.safetysigns.double_sided").withStyle(ChatFormatting.GRAY));
         }
         if (!appearance.isGlow()) {
-            tooltip.add(Component.translatable("tooltip.safetysigns.no_glow"));
+            tooltip.add(Component.translatable("tooltip.safetysigns.no_glow").withStyle(ChatFormatting.GRAY));
         }
     }
 }

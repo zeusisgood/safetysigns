@@ -1,6 +1,6 @@
 # 仕組み（アーキテクチャ）
 
-現在の実装（1.1.0、仕様書「9. 作業の順番」の 8 までと [SPEC_2026-10-12-2](spec/SPEC_2026-10-12-2.md)〜[SPEC_2026-10-25-2](spec/SPEC_2026-10-25-2.md)）の全体構成と主要な流れ。
+現在の実装（1.1.1、仕様書「9. 作業の順番」の 8 までと [SPEC_2026-10-12-2](spec/SPEC_2026-10-12-2.md)〜[SPEC_2026-10-25-3](spec/SPEC_2026-10-25-3.md)）の全体構成と主要な流れ。
 クラスとメソッドの名前は 1.12.2 版のもの。1.20.1・1.21.1 版の同じ役目の名前は「[版ごとの違い](#版ごとの違い)」にある（クラスの名前と並びは 3 つの版で同じ）。
 仕組みを変えたら、同じ PR でこの文書と図を直す。条件付きの図は [`diagrams/`](diagrams/) にある。
 
@@ -45,6 +45,8 @@ flowchart LR
 | GUI を開く | `SafetySignsGuiHandler` | `CommonProxy.openSignPicker`（クライアントでは `client/ClientProxy`。専用サーバーはクライアントのクラスを読まない） | 同左 |
 | 右クリック | `onBlockActivated` | `use` | `useItemOn`（看板アイテムなら素通し）・`useWithoutItem` |
 | 板の描画 | TESR（ディスプレイリスト） | `BlockEntityRenderer`。四角の並び（`common/SignMesh`）を取っておき、`RenderType.cutout()` で毎フレーム描く | 同左 |
+| 図柄を選ぶ画面のボタンの説明 | `drawTooltips` で、マウスを乗せるとすぐ出す | ボタンの `Tooltip`（バニラと同じく少し遅れて出る。キーボードの焦点でも出る） | 同左 |
+| 設定のフォルダ（最近使った図柄） | `Loader.getConfigDir` | `FMLPaths.CONFIGDIR` | 同左 |
 | 図柄のテクスチャ | `TextureStitchEvent.Pre` で定義ファイルの texture を登録 | atlas（`assets/minecraft/atlases/blocks.json`）が `textures/signs/` の下を全部集める。`signs/` の下でない図柄は「?」 | 同左 |
 | 定義ファイルの読み込み | `TextureStitchEvent.Pre` のたび | リソースの読み直しのたび（`RegisterClientReloadListenersEvent`） | 同左 |
 | アイテムの見た目 | NBT（タグの直下） | NBT（同じキー） | データコンポーネント `safetysigns:sign_appearance` |
@@ -82,10 +84,11 @@ flowchart LR
 | `recipe/RecipeClearSign`・`recipe/SafetySignsRecipes` | 看板アイテム 1 個だけで無地に戻すレシピ（`safetysigns:clear_sign`）とその登録 | 両方 |
 | `mc1.12.2/…/assets/safetysigns/recipes/*.json` | 看板を作るレシピ（不定形。木の看板 + 鉄。鉄は鉱石辞書 `ingotIron`・`plateIron`。[ADR 0010](adr/0010-craft-signs-with-shapeless-json-recipes.md)） | 両方 |
 | `network/MessageSetSign` | クライアント → サーバー: 見た目（図柄・切り抜き・裏面・光るか）を変える。サーバーが形・距離・場所を確かめる | 両方 |
-| `common/` | Minecraft に依存しない計算: 図柄 ID の形（`SignIds`）、定義ファイルの読み取り（`SignDefinitionParser`）、マージと検索（`SignCatalog`）、看板が使うマスの計算と置けるかの判定（`SignLayout`・`GridPos`）、テクスチャのアルファから切り抜いた板の形（`SignOutline`）、看板の見た目の値（`SignAppearance`） | 両方（使うのは主にクライアント） |
+| `common/` | Minecraft に依存しない計算: 図柄 ID の形（`SignIds`）、定義ファイルの読み取り（`SignDefinitionParser`）、マージと検索（`SignCatalog`）、看板が使うマスの計算と置けるかの判定（`SignLayout`・`GridPos`）、テクスチャのアルファから切り抜いた板の形（`SignOutline`）、看板の見た目の値（`SignAppearance`）、最近使った図柄の並びと JSON（`RecentSigns`） | 両方（使うのは主にクライアント） |
 | `client/SignTextures` | 定義ファイルを全パックから読んでマージし、図柄のテクスチャを登録する。テクスチャの PNG から板の形を作って取っておく | クライアントだけ |
 | `client/SignRenderer`・`client/SignItemModel`・`client/ClientModels` | 看板の板（表・裏・縁。切り抜き・裏面の設定に合わせ、光る看板は表の図柄だけ明るさ最大）の描画、アイテムのモデル、その登録 | クライアントだけ |
-| `client/gui/GuiSignPicker` | 図柄選択の GUI（タブ（W P M E F GHS その他）・グリッド・プレビュー・検索・無地に戻す・切り抜きと裏面の切り替え・プレビューの下に夜間に光るかの切り替え） | クライアントだけ |
+| `client/gui/GuiSignPicker` | 図柄選択の GUI（閉じるボタン・タブ（最近・W P M E F GHS その他）・グリッド・プレビュー・検索・無地に戻す・下の段に形（切り抜き）・裏側・蓄光（夜間に光る）の切り替え） | クライアントだけ |
+| `client/RecentSignsFile` | 最近使った図柄を設定のフォルダの `safetysigns_recent.json` に読み書きする（起動中に 1 回読み、記録するたびに書く。[ADR 0016](adr/0016-keep-recent-signs-in-a-client-file.md)） | クライアントだけ |
 | `assets/<namespace>/safetysigns/signs.json` | 図柄の定義ファイル（本体のものは `shared/` にある。形は [`resourcepack.md`](resourcepack.md)） | クライアントだけ |
 
 ```mermaid
@@ -105,6 +108,7 @@ flowchart LR
         Json["signs.json<br/>全リソースパック"]
         Render["SignRenderer<br/>切り抜いた板を描く<br/>（光る看板は表だけ明るさ最大）"]
         Gui["GuiSignPicker"]
+        Recent["RecentSignsFile<br/>config/safetysigns_recent.json"]
     end
     Mod -- 通信路・GUI の登録 --> Msg
     Reg --> Block
@@ -120,6 +124,8 @@ flowchart LR
     Tex -- マージ・検索・板の形 --> Common
     Gui -- 一覧・検索 --> Tex
     Gui -- 選ぶたびに送る --> Msg
+    Gui -- 選んだ図柄を記録 --> Recent
+    Recent -- 並び・JSON --> Common
     Msg -- 形の確認 --> Common
     Msg -- 距離を確かめて書き込む --> TE
     TE -. 同期 .-> Render
@@ -130,7 +136,7 @@ flowchart LR
 
 1. 看板アイテム以外を持って（素手でもよい）看板を右クリックすると、クライアントが `GuiSignPicker` を開く（サーバーは何も開かない）。
 2. GUI は `SignTextures` の一覧（全パックの定義をマージしたもの）を表示する。検索は全カテゴリ横断。
-3. 図柄をクリックするたび・切り抜きや裏面・夜間に光るかのボタンを押すたびに、`MessageSetSign`（位置・図柄 ID（無地なら ID なし）・切り抜き・裏面・光るか）をサーバーへ送る。
+3. 図柄をクリックするたび・形（切り抜き）や裏側・蓄光（夜間に光る）のボタンを押すたびに、`MessageSetSign`（位置・図柄 ID（無地なら ID なし）・切り抜き・裏面・光るか）をサーバーへ送る。図柄をクリックしたときは、クライアントの最近使った図柄（`RecentSignsFile`）にも記録する（サーバーは知らない）。
 4. サーバーは、ID の形（`<namespace>:<名前>`、64 文字まで）・看板まで 8 ブロック以内か・いじってよい場所（スポーン保護の外）かを確かめ、TileEntity に書き込む。図柄の一覧は見ない（切り抜き・裏面・光るかは真偽値なのでそのまま）。
 5. TileEntity の変更が、近くのクライアントへ同期される（バニラの TileEntity の更新）。
 6. クライアントは `SignRenderer` で、切り抜き・裏面の設定に合わせた板を描く（光る看板は表の図柄だけ明るさ最大）。一覧にない ID は「?」で描き、ID は消さない。

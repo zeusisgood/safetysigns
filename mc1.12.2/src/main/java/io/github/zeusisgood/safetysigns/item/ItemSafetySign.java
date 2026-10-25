@@ -15,6 +15,7 @@ import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -105,15 +106,15 @@ public class ItemSafetySign extends ItemBlock {
         // 図柄のコードと名前（一覧にない ID は「?」と ID）。既定と違う設定だけ 1 行ずつ足す
         SignAppearance appearance = SignNbt.get(stack);
         tooltip.add(SignTextures.describe(appearance.getSignId()));
-        // 無地は常に切り抜き ON なので、出るのは図柄のある看板だけ
+        // 設定の行はバニラの補足と同じ灰色。無地は常に切り抜き ON なので、形の行が出るのは図柄のある看板だけ
         if (!appearance.isCutout()) {
-            tooltip.add(I18n.format("tooltip.safetysigns.no_cutout"));
+            tooltip.add(TextFormatting.GRAY + I18n.format("tooltip.safetysigns.no_cutout"));
         }
         if (appearance.isBackPattern()) {
-            tooltip.add(I18n.format("tooltip.safetysigns.double_sided"));
+            tooltip.add(TextFormatting.GRAY + I18n.format("tooltip.safetysigns.double_sided"));
         }
         if (!appearance.isGlow()) {
-            tooltip.add(I18n.format("tooltip.safetysigns.no_glow"));
+            tooltip.add(TextFormatting.GRAY + I18n.format("tooltip.safetysigns.no_glow"));
         }
     }
 }
