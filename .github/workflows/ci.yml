@@ -1,3 +1,7 @@
+# ビルドとテスト（PR と main への push）。Minecraft の版ごとのディレクトリ（mc<版>/）を matrix で別々にビルドする。
+# main で版（mc1.12.2/build.gradle の version）のタグ v<版> がまだなければ、全部の版のビルドが通ったときだけ、
+# 同じビルドの jar を全部付けて、タグと GitHub Release を作る（本文は CHANGELOG.md のその版の節）。
+# 流れの図は doc/diagrams/release.md。
 name: CI
 
 on:
@@ -6,18 +10,109 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-mc:
+    name: build (${{ matrix.mc }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mc: '1.12.2'
+            java: '8'
+    defaults:
+      run:
+        working-directory: mc${{ matrix.mc }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "8"
+          java-version: ${{ matrix.java }}
           cache: gradle
       - name: Build and test
         run: ./gradlew build --no-daemon
+      - name: Upload the test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.mc }}
+          path: mc${{ matrix.mc }}/build/reports/tests/
       - uses: actions/upload-artifact@v4
         with:
-          name: safetysigns-jar
-          path: build/libs/*.jar
+          name: jar-${{ matrix.mc }}
+          path: mc${{ matrix.mc }}/build/libs/*.jar
+
+  # Merge に必須のチェックは、ブランチの保護の設定で「build」という名前で決めてある。matrix のジョブは
+  # 版ごとに名前が変わるので、全部の版が通ったときだけ成功する「build」をここで出す（版を足しても設定を変えずに済む）
+  build:
+    needs: build-mc
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every Minecraft version built
+        run: test "${{ needs.build-mc.result }}" = success
+
+  release:
+    needs: build
+    # PR では動かさない（タグと Release は main に取り込まれたあとだけ）
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # 続けて Merge しても、同じ版のリリースを 2 回作らないように 1 本ずつ流す
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the version
+        id: version
+        run: |
+          version=$(sed -n "s/^version = '\(.*\)'/\1/p" mc1.12.2/build.gradle)
+          if [ -z "$version" ]; then
+            echo "::error::mc1.12.2/build.gradle に version = '...' が見つからない"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # 終了コード 0 = タグがある、2 = ない。それ以外（通信の失敗など）は止まる
+          rc=0
+          git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null || rc=$?
+          if [ "$rc" = 0 ]; then
+            echo "Tag v$version already exists; nothing to do."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          elif [ "$rc" = 2 ]; then
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::タグを確かめられない（git ls-remote の終了コード $rc）"
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.version.outputs.new == 'true'
+        with:
+          pattern: jar-*
+          merge-multiple: true
+          path: jar
+      - name: Create the tag and the release
+        if: steps.version.outputs.new == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          version="$VERSION"
+          shopt -s nullglob
+          jars=(jar/safetysigns-*-"$version".jar)
+          if [ ${#jars[@]} -eq 0 ]; then
+            echo "::error::版 $version の jar がない"
+            exit 1
+          fi
+          # CHANGELOG.md の「## <版>」から、次の「## 」の手前まで（行末の空白・CR は無視して比べる）
+          notes="$RUNNER_TEMP/notes.md"
+          awk -v v="## $version" '{sub(/[ \t\r]+$/, "")} $0 == v {f = 1; next} /^## / {f = 0} f' CHANGELOG.md > "$notes"
+          if ! grep -q '[^[:space:]]' "$notes"; then
+            echo "::error::CHANGELOG.md に「## $version」の節がない（または空）"
+            exit 1
+          fi
+          # タグはこのコミットに付く（gh release create がタグも作る）
+          gh release create "v$version" "${jars[@]}" \
+            --title "$version" --notes-file "$notes" --target "$GITHUB_SHA"

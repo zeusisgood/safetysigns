@@ -144,4 +144,4 @@ MIT（コード・テクスチャとも）。[LICENSE](LICENSE) を見てくだ�
 
 - 更新履歴: [CHANGELOG.md](CHANGELOG.md)
 - 仕組み: [doc/architecture.md](doc/architecture.md)、テクスチャの作り方: [doc/development.md](doc/development.md)
-- ビルド: JDK 8 で `./gradlew build` → `build/libs/safetysigns-1.12.2-<版>.jar`
+- ビルド: JDK 8 で `cd mc1.12.2 && ./gradlew build` → `mc1.12.2/build/libs/safetysigns-1.12.2-<版>.jar`

@@ -23,13 +23,14 @@ ISO 7010 の安全標識をモチーフにした、装飾用の警告看板を�
 ## 開発環境・コマンド
 
 - **JDK 8**、ForgeGradle 3 + Gradle 4.9（Gradle 5 以降の構文は使えない。依存は `compile` / `testCompile`）。構成は `zeusisgood/weakspot` と同じにする。
-- ビルド + テスト: `./gradlew build` → `build/libs/safetysigns-1.12.2-<version>.jar`（reobf 済み）。テストのみ: `./gradlew test`。
+- リポジトリの形: `common/`（版に依存しない計算とそのテスト。各版のビルドがソースで読む）・`lang/`（翻訳の正本。json）・`shared/`（全部の版で同じリソース: テクスチャ・定義ファイル `signs.json`・ロゴ）・`mc1.12.2/`（1.12.2 のビルド。ブロックの状態・モデル・レシピ・`mcmod.info` とコード）。版ごとのディレクトリは別々の Gradle のビルド。`doc/`・`tools/` などは直下で全部の版に共通。
+- ビルド + テスト（版のディレクトリの中で）: `cd mc1.12.2 && ./gradlew build` → `mc1.12.2/build/libs/safetysigns-1.12.2-<version>.jar`（reobf 済み）。テストのみ: `./gradlew test`（作業ディレクトリはリポジトリの直下。`common/` のテストはどの版のビルドでも流れる）。
 - テクスチャ生成: `python3 tools/texgen/generate.py`（Pillow。解像度は `--size`、既定 128。内蔵の図柄はすべて 128×128）。生成した PNG と `doc/textures/preview.png`・`doc/textures/parts.png`・`doc/textures/items.png`・`doc/store/icon.png` はコミットする。ビルドに Python を持ち込まない。
 - 描画・GUI の見た目・設置の手触りは Claude が確かめられない。jar をユーザーのホスト側 Minecraft と testserver（マルチ）で試してもらう。
 
 ## バージョン
 
-- 版は `build.gradle` の `version` と `SafetySignsMod.VERSION` の 2 か所。必ず揃え、`CHANGELOG.md` の一番上の見出しも同じ版にする（ずれは `resources/ReleaseFilesTest` で CI が落ちる）。
+- 版は `mc1.12.2/build.gradle` の `version` と `SafetySignsMod.VERSION` の 2 か所。必ず揃え、`CHANGELOG.md` の一番上の見出しも同じ版にする（ずれは `resources/ReleaseFilesTest` で CI が落ちる）。
 - 初版は `0.1.0`。公開する時点で `1.0.0`。
 - 機能の追加・不具合の修正ごとに**パッチ**。互換性を破るとき（通信内容の変更、古い版で読めない保存データ、**図柄 ID の削除・意味の変更**、設定キーの削除・意味の変更）は**マイナー**。迷ったらマイナー。
 - 図柄 ID は一度出したら変えない・消さない（既存ワールドの看板の見た目が変わるため）。
@@ -47,7 +48,7 @@ ISO 7010 の安全標識をモチーフにした、装飾用の警告看板を�
 - 一覧にない ID は「?」の図柄で表示し、ID は消さずに保持する。
 - **サーバーはクライアントから届いた値を正にしない**。図柄 ID は形（`<namespace>:<名前>`、64 文字まで）を確かめ、看板が近くにあるか（届く距離か）も確かめる。
 - 複数ブロックの看板は、図柄を代表の 1 マスが持つ。1 マスが壊れたら全体を消し、アイテムは 1 個だけ落とす。
-- 画面の文字列は `en_us.lang` と `ja_jp.lang` の両方に足す。図柄の名前は定義ファイルに日英で持つ。
+- 画面の文字列は `lang/en_us.json` と `lang/ja_jp.json` の両方に足す（1 行に 1 つの `"キー": "値"`。キーは 1.13 以降の形で、ブロックの名前は `block.safetysigns.<名前>`。1.12.2 の `.lang` はビルドのときに作る。日英のキーの一致は `resources/LangFilesTest`）。図柄の名前は定義ファイルに日英で持つ。
 - 設定は `@Config`（`config/safetysigns.cfg`）。項目の名前は変えない。コメントの先頭に `[サーバー]` / `[クライアント]` を書く。
 
 ## 開発ルール
@@ -83,10 +84,10 @@ ISO 7010 の安全標識をモチーフにした、装飾用の警告看板を�
 - 渡せる状態になったら、Claude が `main` への PR を作る。本文は、変えたこと・試してほしいこと・直さなかった文書とその理由。
 - CI（`.github/workflows/ci.yml` の `build`）の成功が Merge に必須。自分が作った PR の CI が赤くなったら直して push する。
 - PR を出したあとは見張らない。CI の結果は、聞かれたときと次の作業を始めるときに確かめる。
-- Merge はユーザーが行う。**タグと GitHub Release は、`main` に取り込まれたあとに Actions が作る。Claude はタグを付けない**（`.github/workflows/release.yml`、`v<版>`。手順は `doc/development.md` の「リリースの手順」）。
+- Merge はユーザーが行う。**タグと GitHub Release は、`main` に取り込まれたあとに Actions が作る。Claude はタグを付けない**（`.github/workflows/ci.yml` の `release` ジョブ、`v<版>`。手順は `doc/development.md` の「リリースの手順」）。
 - PR のレビューは、普段はセッション内の `reviewer`。必要な PR だけユーザーが `@claude` で呼ぶ（`.github/workflows/claude.yml`）。
 - 仕様書にもとづく作業は、承認を待たずに実装から push と PR まで進める。ただし**止まる条件**（互換性を破る変更が必要、仕様の意図が読み取れない、ビルドやテストが通らない）に当たったら、push せずに止まって報告する。
-- リリースしたら、jar を `build/release/` にコピーしてユーザーに添付し、PR のリンクと「試してほしいこと」を渡す。
+- リリースしたら、jar を `mc1.12.2/build/release/` にコピーしてユーザーに添付し、PR のリンクと「試してほしいこと」を渡す。
 
 ## ユーザーとの進め方
 

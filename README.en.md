@@ -144,4 +144,4 @@ MIT (code and textures). See [LICENSE](LICENSE).
 
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (in Japanese)
 - Design and docs are in `doc/` (in Japanese).
-- Build: `./gradlew build` with JDK 8 → `build/libs/safetysigns-1.12.2-<version>.jar`
+- Build: `cd mc1.12.2 && ./gradlew build` with JDK 8 → `mc1.12.2/build/libs/safetysigns-1.12.2-<version>.jar`
