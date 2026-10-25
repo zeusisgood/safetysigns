@@ -317,21 +317,21 @@ def item_triangle(image, cx, base, width, border):
 
 
 def item_wall_1x1():
-    """壁掛け 1×1: 中央に 21×21 の板。"""
+    """壁掛け 1×1: 中央に 22×22 の板。"""
     image = parts.new_canvas(ITEM_SIZE)
-    item_plate(image, 5, 5, 25, 25)
-    item_triangle(image, 15, 22, 17, 1)
+    item_plate(image, 5, 5, 26, 26)
+    item_triangle(image, 15.5, 23, 17, 1)
     return image
 
 
 def item_wall_2x2():
-    """壁掛け 2×2: 枠いっぱいの板に、4 枚分を示す十字の分割線と大きい三角。"""
+    """壁掛け 2×2: 枠いっぱいの板に、4 枚分を示す十字の分割線（中央に置くため 2 ピクセル）と大きい三角。"""
     image = parts.new_canvas(ITEM_SIZE)
-    item_plate(image, 1, 1, 29, 29)
+    item_plate(image, 1, 1, 30, 30)
     draw = ImageDraw.Draw(image)
-    draw.line([(15, 1), (15, 29)], fill=PLATE_EDGE)
-    draw.line([(1, 15), (29, 15)], fill=PLATE_EDGE)
-    item_triangle(image, 15, 25, 25, 2)
+    draw.rectangle([15, 1, 16, 30], fill=PLATE_EDGE)
+    draw.rectangle([1, 15, 30, 16], fill=PLATE_EDGE)
+    item_triangle(image, 15.5, 26, 25, 2)
     return image
 
 
@@ -339,11 +339,11 @@ def item_pole():
     """ポール付き: 上に 20×20 の板、その下に 4 ピクセル幅の支柱（ブロックの支柱と同じ明暗の列）。"""
     image = parts.new_canvas(ITEM_SIZE)
     draw = ImageDraw.Draw(image)
-    draw.rectangle([13, 19, 16, 31], fill=POLE)
-    draw.line([(13, 19), (13, 31)], fill=POLE_LIGHT)
-    draw.line([(16, 19), (16, 31)], fill=POLE_DARK)
-    item_plate(image, 5, 0, 24, 19)
-    item_triangle(image, 14.5, 16, 15, 1)
+    draw.rectangle([14, 19, 17, 31], fill=POLE)
+    draw.line([(14, 19), (14, 31)], fill=POLE_LIGHT)
+    draw.line([(17, 19), (17, 31)], fill=POLE_DARK)
+    item_plate(image, 6, 0, 25, 19)
+    item_triangle(image, 15.5, 16, 15, 1)
     return image
 
 

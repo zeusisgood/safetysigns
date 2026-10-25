@@ -1,6 +1,6 @@
-# ストアの説明文（CurseForge・Modrinth）
+# ストアの説明文（CurseForge）
 
-CurseForge と Modrinth の説明欄にそのまま貼る文章。英語を先に、日本語をあとに並べる（どちらも Markdown のまま貼れる）。
+CurseForge の説明欄にそのまま貼る文章。英語を先に、日本語をあとに並べる（どちらも Markdown のまま貼れる）。
 公開先は CurseForge だけ（文章は Markdown のままなので、Modrinth に出すときもそのまま貼れる）。
 
 画像:
