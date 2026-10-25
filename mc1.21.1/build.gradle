@@ -1,0 +1,72 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+// 版は SafetySignsMod.VERSION と必ず揃える（CLAUDE.md のバージョンの方針）
+version = mod_version
+group = 'io.github.zeusisgood'
+base.archivesName = "safetysigns-${minecraft_version}-neoforge"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+// 版に依存しない計算（common）と全部の版で同じリソース（shared）は、各版のビルドがソースで読む
+sourceSets {
+    main.java.srcDir '../common/src/main/java'
+    main.resources.srcDir '../shared'
+    test.java.srcDir '../common/src/test/java'
+}
+
+neoForge {
+    version = neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        safetysigns {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    // common の定義ファイルの読み取りは Minecraft の持つ Gson を使う。ModDevGradle はテストの実行に Minecraft の依存を入れないので足す
+    testRuntimeOnly 'com.google.code.gson:gson:2.10.1'
+}
+
+// 翻訳の正本は ../lang/*.json。1.21.1 はそのまま読む
+processResources {
+    inputs.property 'version', version
+    from('../lang') {
+        include '*.json'
+        into 'assets/safetysigns/lang'
+    }
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand 'version': version, 'minecraft_version': minecraft_version, 'neo_version': neo_version
+    }
+}
+
+jar {
+    // MIT の条件（配布物に著作権表示を付ける）のため、jar にも LICENSE を入れる
+    from('../LICENSE') {
+        rename { 'LICENSE_safetysigns' }
+    }
+}
+
+test {
+    // テストは、リポジトリ直下のファイル（翻訳・CHANGELOG.md・各版の版の番号）を読む
+    workingDir = file('..')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

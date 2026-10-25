@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north,part=0": { "model": "safetysigns:block/wall_sign" },
+    "facing=north,part=1": { "model": "safetysigns:block/wall_sign" },
+    "facing=north,part=2": { "model": "safetysigns:block/wall_sign" },
+    "facing=north,part=3": { "model": "safetysigns:block/wall_sign" },
+    "facing=east,part=0": { "model": "safetysigns:block/wall_sign", "y": 90 },
+    "facing=east,part=1": { "model": "safetysigns:block/wall_sign", "y": 90 },
+    "facing=east,part=2": { "model": "safetysigns:block/wall_sign", "y": 90 },
+    "facing=east,part=3": { "model": "safetysigns:block/wall_sign", "y": 90 },
+    "facing=south,part=0": { "model": "safetysigns:block/wall_sign", "y": 180 },
+    "facing=south,part=1": { "model": "safetysigns:block/wall_sign", "y": 180 },
+    "facing=south,part=2": { "model": "safetysigns:block/wall_sign", "y": 180 },
+    "facing=south,part=3": { "model": "safetysigns:block/wall_sign", "y": 180 },
+    "facing=west,part=0": { "model": "safetysigns:block/wall_sign", "y": 270 },
+    "facing=west,part=1": { "model": "safetysigns:block/wall_sign", "y": 270 },
+    "facing=west,part=2": { "model": "safetysigns:block/wall_sign", "y": 270 },
+    "facing=west,part=3": { "model": "safetysigns:block/wall_sign", "y": 270 }
+  }
+}

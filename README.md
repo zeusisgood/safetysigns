@@ -11,16 +11,18 @@ ISO 7010 などの安全標識・ハザードシンボルをモチーフにし�
 
 ## ダウンロード
 
-- [GitHub Releases](https://github.com/zeusisgood/safetysigns/releases) から `safetysigns-1.12.2-<版>.jar` を落とし、`mods` フォルダに入れてください。
-- **クライアントとサーバーの両方に必要**です。接続できるのは、同じマイナー版同士（例: 1.0.x 同士）です。
+- [GitHub Releases](https://github.com/zeusisgood/safetysigns/releases) から、Minecraft の版とローダーに合った jar（`safetysigns-1.12.2-forge-<版>.jar`・`safetysigns-1.20.1-forge-<版>.jar`・`safetysigns-1.21.1-neoforge-<版>.jar`）を落とし、`mods` フォルダに入れてください。
+- **クライアントとサーバーの両方に必要**です。接続できるのは、同じマイナー版同士（例: 1.1.x 同士）です。
 
 ## 対応する版
 
-| 項目 | 内容 |
-|---|---|
-| Minecraft | Java Edition 1.12.2 |
-| Mod ローダー | Forge（開発・動作確認は 14.23.5.2860） |
-| 前提 Mod | なし |
+| Minecraft | ローダー | 開発に使う版 | 備考 |
+|---|---|---|---|
+| 1.12.2 | Forge | 14.23.5.2860 | 古い Forge では一部の機能が動かない可能性あり |
+| 1.20.1 | Forge（47.1.32 以降） | 47.1.32 | |
+| 1.21.1 | NeoForge | 21.1.264 | |
+
+- 前提 Mod はありません。3 つの版で、看板・図柄・操作・レシピは同じです。
 
 ## 看板
 
@@ -132,8 +134,8 @@ ISO 7010 などの安全標識・ハザードシンボルをモチーフにし�
 | ポール付き看板 | 看板（木）3 + 鉄インゴット 1 | 1 |
 | 無地に戻す | 看板アイテム 1 個だけ | 同じアイテムの無地 1 |
 
-- 鉄インゴットの代わりに、鉱石辞書の `ingotIron`・`plateIron`（他 Mod の鉄インゴット・鉄板）も使えます。
-- 看板（木）はバニラの看板です。
+- 鉄インゴットは、他 Mod の鉄インゴットも使えます（1.12.2 は鉱石辞書の `ingotIron`、1.20.1 はタグ `forge:ingots/iron`、1.21.1 はタグ `c:ingots/iron`）。1.12.2 だけは、鉱石辞書の `plateIron`（鉄板）も使えます。
+- 看板（木）はバニラの看板です（1.20.1・1.21.1 はどの木の看板でもよい）。
 - できた看板は無地です。設定は初期値（切り抜き ON・裏面 銀・夜間に光る ON）です。
 
 ## ライセンス
@@ -144,4 +146,4 @@ MIT（コード・テクスチャとも）。[LICENSE](LICENSE) を見てくだ�
 
 - 更新履歴: [CHANGELOG.md](CHANGELOG.md)
 - 仕組み: [doc/architecture.md](doc/architecture.md)、テクスチャの作り方: [doc/development.md](doc/development.md)
-- ビルド: JDK 8 で `cd mc1.12.2 && ./gradlew build` → `mc1.12.2/build/libs/safetysigns-1.12.2-<版>.jar`
+- ビルド: 版ごとのディレクトリで `./gradlew build`（1.12.2 は JDK 8、1.20.1 は JDK 17、1.21.1 は JDK 21）→ `mc<版>/build/libs/safetysigns-<Minecraft の版>-<ローダー>-<版>.jar`（[doc/development.md](doc/development.md)）

@@ -11,16 +11,18 @@ Put a "radioactive material" sign around your reactor or an "electricity" sign o
 
 ## Download
 
-- Get `safetysigns-1.12.2-<version>.jar` from [GitHub Releases](https://github.com/zeusisgood/safetysigns/releases) and put it in your `mods` folder.
-- **Required on both the client and the server.** Only the same minor version can connect (e.g. 1.0.x with 1.0.x).
+- Get the jar for your Minecraft version and loader (`safetysigns-1.12.2-forge-<version>.jar`, `safetysigns-1.20.1-forge-<version>.jar` or `safetysigns-1.21.1-neoforge-<version>.jar`) from [GitHub Releases](https://github.com/zeusisgood/safetysigns/releases) and put it in your `mods` folder.
+- **Required on both the client and the server.** Only the same minor version can connect (e.g. 1.1.x with 1.1.x).
 
 ## Supported versions
 
-| Item | Version |
-|---|---|
-| Minecraft | Java Edition 1.12.2 |
-| Mod loader | Forge (developed and tested on 14.23.5.2860) |
-| Dependencies | None |
+| Minecraft | Loader | Developed on | Notes |
+|---|---|---|---|
+| 1.12.2 | Forge | 14.23.5.2860 | Some features may not work on older Forge |
+| 1.20.1 | Forge (47.1.32 or later) | 47.1.32 | |
+| 1.21.1 | NeoForge | 21.1.264 | |
+
+- No other mods are required. Signs, pictograms, controls and recipes are the same on all three versions.
 
 ## Signs
 
@@ -132,8 +134,8 @@ All recipes are shapeless.
 | Safety Sign (Pole) | 3 Signs (wooden) + 1 Iron Ingot | 1 |
 | Reset to blank | A single sign item | 1 blank item of the same kind |
 
-- The iron accepts the ore dictionary entries `ingotIron` and `plateIron` (iron ingots and iron plates from other mods).
-- The wooden sign is the vanilla sign.
+- Iron ingots from other mods also work (the ore dictionary entry `ingotIron` on 1.12.2, the tag `forge:ingots/iron` on 1.20.1, the tag `c:ingots/iron` on 1.21.1). On 1.12.2 only, the ore dictionary entry `plateIron` (iron plates) also works.
+- The wooden sign is the vanilla sign (any wood on 1.20.1 and 1.21.1).
 - Crafted signs are blank with default settings (cutout ON, back silver, night glow ON).
 
 ## License
@@ -144,4 +146,4 @@ MIT (code and textures). See [LICENSE](LICENSE).
 
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (in Japanese)
 - Design and docs are in `doc/` (in Japanese).
-- Build: `cd mc1.12.2 && ./gradlew build` with JDK 8 → `mc1.12.2/build/libs/safetysigns-1.12.2-<version>.jar`
+- Build: `./gradlew build` in each version's folder (JDK 8 for 1.12.2, JDK 17 for 1.20.1, JDK 21 for 1.21.1) → `mc<version>/build/libs/safetysigns-<Minecraft version>-<loader>-<version>.jar`

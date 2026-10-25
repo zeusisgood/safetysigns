@@ -1,6 +1,7 @@
 # 仕組み（アーキテクチャ）
 
-現在の実装（1.0.5、仕様書「9. 作業の順番」の 8 までと [SPEC_2026-10-12-2](spec/SPEC_2026-10-12-2.md)〜[SPEC_2026-10-25-2](spec/SPEC_2026-10-25-2.md) の §1）の全体構成と主要な流れ。
+現在の実装（1.1.0、仕様書「9. 作業の順番」の 8 までと [SPEC_2026-10-12-2](spec/SPEC_2026-10-12-2.md)〜[SPEC_2026-10-25-2](spec/SPEC_2026-10-25-2.md)）の全体構成と主要な流れ。
+クラスとメソッドの名前は 1.12.2 版のもの。1.20.1・1.21.1 版の同じ役目の名前は「[版ごとの違い](#版ごとの違い)」にある（クラスの名前と並びは 3 つの版で同じ）。
 仕組みを変えたら、同じ PR でこの文書と図を直す。条件付きの図は [`diagrams/`](diagrams/) にある。
 
 ## リポジトリの形
@@ -9,23 +10,58 @@ Minecraft の版ごとのディレクトリ（`mc<版>/`）は、それぞれ別
 
 | ディレクトリ | 中身 |
 |---|---|
-| `common/` | Minecraft に依存しない計算（下の表の `common/`）とそのテスト、ファイルの揃い具合のテスト（`resources/ReleaseFilesTest`・`LangFilesTest`） |
+| `common/` | Minecraft に依存しない計算（下の表の `common/`。新しい版の板の四角の並び `SignMesh` も）とそのテスト、ファイルの揃い具合のテスト（`resources/ReleaseFilesTest`・`LangFilesTest`） |
 | `lang/` | 翻訳の正本（`en_us.json`・`ja_jp.json`。キーは 1.13 以降の形）。1.12.2 はビルドのときに `.lang` を作る（ブロックの名前のキー `block.safetysigns.<名前>` を `tile.safetysigns.<名前>.name` にする） |
 | `shared/` | 全部の版で同じリソース: テクスチャ（`textures/signs`・`block`・`item`）、図柄の定義ファイル `signs.json`、ロゴ。`tools/texgen/generate.py` が書き出す |
 | `mc1.12.2/` | 1.12.2 + Forge のコードと、版で形が違うリソース（ブロックの状態・モデル・レシピ・`mcmod.info`） |
+| `mc1.20.1/` | 1.20.1 + Forge のコードと、版で形が違うリソース（ブロックの状態・モデル・`data/` のレシピ・atlas・`mods.toml`） |
+| `mc1.21.1/` | 1.21.1 + NeoForge のコードと、版で形が違うリソース（1.20.1 と同じ。レシピのフォルダは `recipe/`、`neoforge.mods.toml`） |
 
 ```mermaid
 flowchart LR
     Texgen["tools/texgen<br/>generate.py"] --> Shared["shared/<br/>テクスチャ・signs.json・ロゴ"]
     Common["common/<br/>計算とテスト"] --> B112
+    Common --> B120
+    Common --> B121
     Lang["lang/*.json"] -- .lang に変換 --> B112
-    Shared --> B112["mc1.12.2/<br/>./gradlew build"]
-    B112 --> Jar["safetysigns-1.12.2-版.jar"]
+    Lang --> B120
+    Lang --> B121
+    Shared --> B112["mc1.12.2/<br/>JDK 8"]
+    Shared --> B120["mc1.20.1/<br/>JDK 17"]
+    Shared --> B121["mc1.21.1/<br/>JDK 21"]
+    B112 --> Jar112["safetysigns-1.12.2-forge-版.jar"]
+    B120 --> Jar120["safetysigns-1.20.1-forge-版.jar"]
+    B121 --> Jar121["safetysigns-1.21.1-neoforge-版.jar"]
 ```
+
+### 版ごとの違い
+
+機能・見た目・操作・通信の中身・TileEntity の NBT のキーは 3 つの版で同じ。仕組みを足す・直すときは、3 つの版を同じ PR で直す。
+
+| 役目 | 1.12.2 | 1.20.1 | 1.21.1 |
+|---|---|---|---|
+| 登録 | `RegistryEvent` | `DeferredRegister` | `DeferredRegister` |
+| ブロックの向き・部品 | メタデータ（下の表） | `BlockState` のプロパティ（`facing`・`part`） | 同左 |
+| GUI を開く | `SafetySignsGuiHandler` | `CommonProxy.openSignPicker`（クライアントでは `client/ClientProxy`。専用サーバーはクライアントのクラスを読まない） | 同左 |
+| 右クリック | `onBlockActivated` | `use` | `useItemOn`（看板アイテムなら素通し）・`useWithoutItem` |
+| 板の描画 | TESR（ディスプレイリスト） | `BlockEntityRenderer`。四角の並び（`common/SignMesh`）を取っておき、`RenderType.cutout()` で毎フレーム描く | 同左 |
+| 図柄のテクスチャ | `TextureStitchEvent.Pre` で定義ファイルの texture を登録 | atlas（`assets/minecraft/atlases/blocks.json`）が `textures/signs/` の下を全部集める。`signs/` の下でない図柄は「?」 | 同左 |
+| 定義ファイルの読み込み | `TextureStitchEvent.Pre` のたび | リソースの読み直しのたび（`RegisterClientReloadListenersEvent`） | 同左 |
+| アイテムの見た目 | NBT（タグの直下） | NBT（同じキー） | データコンポーネント `safetysigns:sign_appearance` |
+| 図柄を持つアイテムのアイコン | `SignItemModel`（`ItemLayerModel`） | `SignItemModel`（`ModelEvent.ModifyBakingResult`。`UnbakedGeometryHelper` で焼く） | 同左 |
+| 壊すときに図柄を読む | `removedByPlayer` で残して `harvestBlock` で消す | `onDestroyedByPlayer` で残して `playerDestroy` で消す。ドロップは `getDrops` が作る（ルートテーブルは使わない） | 同左 |
+| ほかのマスを消す | `breakBlock` | `onRemove`（ブロックが替わるときだけ） | 同左 |
+| 無地に戻すレシピ | `IRecipe`（コードで登録） | `CustomRecipe` + `data/safetysigns/recipes/clear_sign.json` | 同左（`recipe/`） |
+| 通信 | `SimpleNetworkWrapper` | `SimpleChannel` | `CustomPacketPayload` |
+| 接続できる範囲 | `acceptableRemoteVersions` = `ACCEPTED_VERSIONS` | `SafetySignsNetwork.PROTOCOL`（マイナーの番号） | 同左 |
+| クリエイティブタブ | 装飾ブロック | 機能的ブロック（`BuildCreativeModeTabContentsEvent`） | 同左 |
+| 描く範囲・距離 | `getRenderBoundingBox`・`getMaxRenderDistanceSquared` | `getRenderBoundingBox`（TileEntity）・`getViewDistance` | `getRenderBoundingBox`・`getViewDistance`（どちらも描画の側） |
+
+- 同期: 既定の見た目に戻すと TileEntity の更新のタグが空になる。1.20.1・1.21.1 の既定の `onDataPacket` は空のタグを読まないので、`TileEntitySafetySign.onDataPacket` で空も既定の見た目として読む。
 
 ## 全体構成
 
-- クライアントとサーバーの両方に Mod が必要（`@Mod` の `acceptableRemoteVersions` で同じマイナー同士だけ接続できる）。
+- クライアントとサーバーの両方に Mod が必要（1.12.2 は `@Mod` の `acceptableRemoteVersions`、1.20.1・1.21.1 は通信の `PROTOCOL` で、同じマイナー同士だけ接続できる）。
 - 看板の図柄は、TileEntity とアイテムの NBT に**図柄 ID の文字列**で持つ（[ADR 0001](adr/0001-store-sign-pattern-as-string-id.md)）。看板ごとの切り抜き（ON/OFF）・裏面（銀/図柄）・夜間に光るか（ON/OFF）も同じ NBT に持ち、4 つをまとめて `common/SignAppearance` として持ち運ぶ（[ADR 0007](adr/0007-keep-cutout-and-back-face-per-sign.md)、[ADR 0008](adr/0008-keep-night-glow-per-sign.md)）。
 - 図柄の一覧（定義ファイル）はクライアントだけが読む。サーバーは ID の文字列を保存・同期し、届いた ID の形と距離を確かめるだけ（[ADR 0002](adr/0002-load-sign-definitions-on-texture-stitch.md)）。
 - 図柄の分類（GUI のタブ）は ISO 7010 の W P M E F と GHS・その他（`common/SignCategory`）。定義ファイルの知らない分類は「その他」として読む（[ADR 0012](adr/0012-read-unknown-categories-as-other.md)）。
@@ -140,11 +176,14 @@ sequenceDiagram
 | 〃 | `Cutout` | 切り抜き OFF のときだけ `false`（byte）。キーなしは ON |
 | 〃 | `BackPattern` | 裏面が図柄のときだけ `true`（byte）。キーなしは銀 |
 | 〃 | `Glow` | 夜間に光らないときだけ `false`（byte）。キーなしは光る |
-| アイテム（タグの直下） | `SignId`・`Cutout`・`BackPattern`・`Glow` | 同上。既定の見た目なら NBT なし（無地のアイテムとスタックできる） |
+| アイテム（タグの直下。1.12.2・1.20.1） | `SignId`・`Cutout`・`BackPattern`・`Glow` | 同上。既定の見た目なら NBT なし（無地のアイテムとスタックできる） |
+| アイテム（1.21.1） | データコンポーネント `safetysigns:sign_appearance` の `sign_id`・`cutout`・`back_pattern`・`glow` | 同上（既定の値は書かない）。既定の見た目ならコンポーネントなし |
 
 キー名・TileEntity の登録名は既存のワールドが参照するので変えない。
 
 ## ブロックの状態（メタデータ）
+
+1.20.1・1.21.1 はメタデータを持たず、同じ名前の状態（`facing`・`part`）をそのまま持つ。
 
 | ブロック | 状態 | メタデータ |
 |---|---|---|
