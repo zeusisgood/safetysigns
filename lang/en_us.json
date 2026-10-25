@@ -28,11 +28,11 @@
   "gui.safetysigns.back.silver": "Silver",
   "gui.safetysigns.back.pattern": "Pattern",
   "gui.safetysigns.back.tooltip": "Shows the same pattern on the back, or bare metal",
-  "tooltip.safetysigns.no_cutout": "Not cut out",
-  "tooltip.safetysigns.double_sided": "Double-sided",
+  "tooltip.safetysigns.no_cutout": "Shape: Square",
+  "tooltip.safetysigns.double_sided": "Back: Pattern",
   "gui.safetysigns.glow": "Glow: %s",
   "gui.safetysigns.glow.on": "On",
   "gui.safetysigns.glow.off": "Off",
   "gui.safetysigns.glow.tooltip": "Keeps the pattern bright in the dark",
-  "tooltip.safetysigns.no_glow": "Does not glow"
+  "tooltip.safetysigns.no_glow": "Glow: Off"
 }

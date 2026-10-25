@@ -28,11 +28,11 @@
   "gui.safetysigns.back.silver": "金属",
   "gui.safetysigns.back.pattern": "図柄",
   "gui.safetysigns.back.tooltip": "看板の裏側に、表と同じ図柄を描くか、金属にするかを選びます",
-  "tooltip.safetysigns.no_cutout": "切り抜きなし",
-  "tooltip.safetysigns.double_sided": "両面",
+  "tooltip.safetysigns.no_cutout": "形: 四角",
+  "tooltip.safetysigns.double_sided": "裏側: 図柄",
   "gui.safetysigns.glow": "蓄光: %s",
   "gui.safetysigns.glow.on": "あり",
   "gui.safetysigns.glow.off": "なし",
   "gui.safetysigns.glow.tooltip": "暗い所でも図柄が明るく見えます",
-  "tooltip.safetysigns.no_glow": "光らない"
+  "tooltip.safetysigns.no_glow": "蓄光: なし"
 }
