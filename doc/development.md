@@ -15,6 +15,10 @@ python3 tools/texgen/generate.py --size 64  # 解像度を変える（16〜512 �
 | `src/main/resources/assets/safetysigns/textures/blocks/sign_*.png` | 無地・「?」（`--size` の解像度）・裏面・支柱（いつも 16×16） |
 | `doc/textures/preview.png` | 全図柄を同じ大きさに拡大して（128 なら 2 倍）、コードと英語の名前を添えた一覧（PR に貼る） |
 | `doc/textures/parts.png` | 記号の部品だけを白地に黒で並べた一覧（PR に貼る） |
+| `src/main/resources/assets/safetysigns/textures/items/*.png` | 無地の看板アイテムのアイコン 3 種（いつも 32×32。図柄を持つアイテムは図柄のアイコンになる） |
+| `doc/textures/items.png` | アイテムのアイコンの一覧（PR に貼る） |
+| `doc/store/icon.png` | CurseForge のアイコン（壁掛け 1×1 のアイコンを 16 倍、512×512。透明な所は `#2B2F33`。jar には入らない） |
+| `src/main/resources/logo.png` | Forge の Mods 画面のロゴ（同じ絵を 4 倍、128×128。`mcmod.info` の `logoFile`） |
 
 本体の図案は 128 で見て決めている。`--size` を変えても描けるが、64 以下では細い所（0.5 単位の線・隙間）がつぶれる（コミットするのは 128）。
 

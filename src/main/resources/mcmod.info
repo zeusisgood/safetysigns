@@ -5,11 +5,11 @@
   "description": "Decorative warning signs inspired by ISO 7010 and other safety signs and hazard symbols. Unofficial; not affiliated with ISO, the United Nations or any standards body.",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "",
+  "url": "https://github.com/zeusisgood/safetysigns",
   "updateUrl": "",
   "authorList": ["zeusisgood"],
-  "credits": "",
-  "logoFile": "",
+  "credits": "Pictograms drawn for this mod with ISO 7010, the GHS and ISO 21482 as references.",
+  "logoFile": "logo.png",
   "screenshots": [],
   "dependencies": []
 }
